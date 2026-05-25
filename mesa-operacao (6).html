@@ -1,0 +1,2446 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mesa de Operação — APPA Serviços</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+
+// ===== MINI CHARTS NAS ABAS =====
+var tabChartsInited = {};
+
+function mkSparkline(id, data, color) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  if (el._chartInstance) { try { el._chartInstance.destroy(); } catch(e){} }
+  var cfg = {
+    type: 'line',
+    data: {
+      labels: data.map((_,i) => i),
+      datasets: [{ data: data, borderColor: color, backgroundColor: color + '22',
+        tension: 0.4, fill: true, pointRadius: 0, borderWidth: 2 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: { duration: 600 },
+      scales: { x: { display: false }, y: { display: false } },
+      plugins: { legend: { display: false }, tooltip: { enabled: false } }
+    }
+  };
+  el._chartInstance = new Chart(el, cfg);
+}
+
+function mkBarChart(id, labels, datasets, stacked) {
+  var el = document.getElementById(id); if (!el) return;
+  if (el._chartInstance) { try { el._chartInstance.destroy(); } catch(e){} }
+  var isDk = document.documentElement.getAttribute('data-theme') !== 'light';
+  var gc = isDk ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.07)';
+  var tc = isDk ? '#6b7280' : '#9ca3af';
+  el._chartInstance = new Chart(el, {
+    type: 'bar',
+    data: { labels: labels, datasets: datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: { duration: 700 },
+      plugins: { legend: { display: datasets.length > 1, labels: { color: tc, boxWidth: 10, font: { size: 10 }, padding: 8 } } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: tc, font: { size: 10 } }, stacked: !!stacked },
+        y: { grid: { color: gc }, ticks: { color: tc, font: { size: 10 } }, stacked: !!stacked }
+      }
+    }
+  });
+}
+
+function mkDoughnut(id, labels, data, colors) {
+  var el = document.getElementById(id); if (!el) return;
+  if (el._chartInstance) { try { el._chartInstance.destroy(); } catch(e){} }
+  var isDk = document.documentElement.getAttribute('data-theme') !== 'light';
+  var lc = isDk ? '#9ca3af' : '#6b7280';
+  el._chartInstance = new Chart(el, {
+    type: 'doughnut',
+    data: { labels: labels, datasets: [{ data: data, backgroundColor: colors, borderWidth: 0, hoverOffset: 4 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: { duration: 700 }, cutout: '62%',
+      plugins: { legend: { position: 'right', labels: { color: lc, boxWidth: 10, font: { size: 10 }, padding: 8 } } }
+    }
+  });
+}
+
+function initTabCharts(tab) {
+  if (tabChartsInited[tab]) return;
+  tabChartsInited[tab] = true;
+  var days = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+  var wk   = ['S1','S2','S3','S4'];
+
+  if (tab === 'clf') {
+    // Sparklines CLF
+    mkSparkline('spkCLF1', [10,13,12,15,14,16,16], '#10b981');
+    mkSparkline('spkCLF2', [8,7,9,6,7,5,6],        '#3b82f6');
+    mkSparkline('spkCLF3', [2,3,4,3,5,4,5],         '#f59e0b');
+    mkSparkline('spkCLF4', [1,2,1,3,2,3,3],         '#ef4444');
+    // Gráfico de linha — concluídos por semana
+    mkBarChart('chartCLFweek', wk, [
+      { label: 'Concluídos', data: [58,72,81,76], backgroundColor: 'rgba(16,185,129,.7)', borderRadius: 5 },
+      { label: 'Com falha',  data: [8,5,12,9],    backgroundColor: 'rgba(239,68,68,.55)', borderRadius: 5 }
+    ], false);
+    // Doughnut distribuição
+    mkDoughnut('chartCLFdist',
+      ['Concluídos','Andamento','Atrasados','Com falha'],
+      [16, 6, 5, 3],
+      ['#10b981','#3b82f6','#f59e0b','#ef4444']
+    );
+  }
+
+  if (tab === 'itr') {
+    // Sparklines ITR
+    mkSparkline('spkITR1', [20,22,21,24,23,24,24], '#10b981');
+    mkSparkline('spkITR2', [6,5,4,5,4,3,4],         '#f59e0b');
+    mkSparkline('spkITR3', [980,1100,1050,1200,1180,1240,1284], '#3b82f6');
+    mkSparkline('spkITR4', [1,2,1,1,2,2,2],          '#ef4444');
+    // Linha de Km
+    mkBarChart('chartITRkm', days, [
+      { label: 'Km', data: [7200,8100,6900,8800,7500,3200,1284],
+        backgroundColor: 'rgba(249,115,22,.7)', borderRadius: 5 }
+    ], false);
+    // Doughnut status frota
+    mkDoughnut('chartITRdist',
+      ['Em rota','Parado','Offline','Manutenção'],
+      [24, 4, 2, 1],
+      ['#10b981','#f59e0b','#6b7280','#ef4444']
+    );
+  }
+
+  if (tab === 'psg') {
+    // Sparklines PSG
+    mkSparkline('spkPSG1', [2,1,3,2,3,3,3],           '#ef4444');
+    mkSparkline('spkPSG2', [1,2,1,2,1,2,2],            '#f59e0b');
+    mkSparkline('spkPSG3', [2,3,2,4,3,4,4],            '#10b981');
+    mkSparkline('spkPSG4', [15,8,22,20,28,28,28].map(v=>v), '#8b5cf6');
+    // Barra custo mensal
+    mkBarChart('chartPSGcusto', ['Jan','Fev','Mar','Abr','Mai'], [
+      { label: 'R$ Custo', data: [15000,8000,22000,20000,28000],
+        backgroundColor: ['rgba(139,92,246,.6)','rgba(139,92,246,.6)','rgba(139,92,246,.6)','rgba(139,92,246,.6)','rgba(139,92,246,.9)'],
+        borderRadius: 5 }
+    ], false);
+    // Doughnut por status
+    mkDoughnut('chartPSGstatus',
+      ['Urgente','Em análise','Aprovado','Encerrado'],
+      [1, 2, 4, 8],
+      ['#ef4444','#f59e0b','#10b981','#6b7280']
+    );
+  }
+
+  if (tab === 'hcm') {
+    // Sparklines HCM
+    mkSparkline('spkHCM1', [145,147,142,150,148,149,148], '#10b981');
+    mkSparkline('spkHCM2', [4,3,5,4,6,5,6],               '#ef4444');
+    mkSparkline('spkHCM3', [8,10,9,11,12,11,12],           '#8b5cf6');
+    mkSparkline('spkHCM4', [9,10,11,10,10,10,10],           '#3b82f6');
+    // Linha presença semanal
+    mkBarChart('chartHCMpres', days, [
+      { label: 'Presentes', data: [148,151,145,149,148,82,0],
+        backgroundColor: 'rgba(16,185,129,.7)', borderRadius: 4, stack: 's' },
+      { label: 'Ausentes',  data: [14,11,17,13,14,8,0],
+        backgroundColor: 'rgba(239,68,68,.5)', borderRadius: 4, stack: 's' }
+    ], true);
+    // Doughnut distribuição
+    mkDoughnut('chartHCMdist',
+      ['Ativos','Ausentes','Férias','Afastados'],
+      [148, 6, 8, 2],
+      ['#10b981','#ef4444','#3b82f6','#f59e0b']
+    );
+  }
+}
+
+// Interceptar switchApiTab para iniciar charts
+var _origSwitch = typeof switchApiTab === 'function' ? switchApiTab : null;
+function switchApiTab(tab) {
+  // hide all
+  document.querySelectorAll('.api-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('[id^="apicontent-"]').forEach(c => { c.style.display = 'none'; });
+  // activate
+  var tabEl = document.getElementById('apitab-' + tab);
+  if (tabEl) tabEl.classList.add('active');
+  var content = document.getElementById('apicontent-' + tab);
+  if (content) content.style.display = 'block';
+  // init charts lazily
+  if (['clf','itr','psg','hcm'].includes(tab)) {
+    setTimeout(() => initTabCharts(tab), 80);
+  }
+}
+
+// Init CLF charts on first load
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(function(){ 
+    if(typeof initTabCharts==='function') initTabCharts('clf'); 
+  }, 500);
+});
+
+
+// ═══════════════════════════════════════════════
+//   MAPA INTERATIVO ITURAN
+// ═══════════════════════════════════════════════
+var ITR_VEHS = [
+  { id:0, plate:'ABC-1234', model:'Fiat Fiorino',   driver:'João Mendes',  speed:62,  km:187, bat:'98%', loc:'Av. Paulista, SP',   time:'agora',     ign:'Ligada',   status:'on',   color:'#10b981',
+    path:[ [460,140],[385,140],[310,140],[310,60],[240,60],[160,60],[80,60] ] },
+  { id:1, plate:'DEF-5678', model:'VW Gol',         driver:'Carlos Ramos', speed:0,   km:43,  bat:'72%', loc:'R. Augusta, SP',     time:'há 22 min', ign:'Ligada',   status:'warn', color:'#f59e0b',
+    path:[ [160,200] ] },
+  { id:2, plate:'GHI-9012', model:'Ford Transit',   driver:'Fábio Torres', speed:48,  km:224, bat:'85%', loc:'Via Anchieta',       time:'agora',     ign:'Ligada',   status:'on',   color:'#3b82f6',
+    path:[ [160,260],[240,260],[310,260],[385,260],[460,260],[535,260] ] },
+  { id:3, plate:'JKL-3456', model:'Chevrolet S10',  driver:'—',            speed:0,   km:0,   bat:'12%', loc:'Guarulhos, SP',      time:'há 3h12',   ign:'Desligada',status:'off',  color:'#6b7280',
+    path:[ [80,370] ] },
+  { id:4, plate:'MNO-7890', model:'Renault Master', driver:'Ana Lima',     speed:35,  km:156, bat:'91%', loc:'Av. Brasil, SP',     time:'agora',     ign:'Ligada',   status:'on',   color:'#8b5cf6',
+    path:[ [610,370],[535,370],[460,370],[385,370],[310,370] ] },
+];
+
+var itrSelectedId = -1;
+var itrFilter_current = 'all';
+var itrViewBox = {x:0, y:0, w:780, h:440};
+var itrFollowing = false;
+var itrAnimFrame = 0;
+
+// Posições atuais (animadas)
+var itrPos = ITR_VEHS.map(function(v){ return {x: v.path[0][0], y: v.path[0][1], pathIdx:0, t:0}; });
+
+function itrInit() {
+  itrRenderList();
+  itrRenderTable();
+  itrAnimate();
+}
+
+// ── Renderizar lista lateral ──────────────────────────────────────────────────
+function itrRenderList() {
+  var panel = document.getElementById('vehListPanel');
+  if(!panel) return;
+  var filtered = ITR_VEHS.filter(function(v){
+    if(itrFilter_current==='all') return true;
+    if(itrFilter_current==='on')   return v.status==='on';
+    if(itrFilter_current==='warn') return v.status==='warn';
+    if(itrFilter_current==='off')  return v.status==='off';
+    return true;
+  });
+  panel.innerHTML = filtered.map(function(v){
+    var statusLabel = v.status==='on'?'Em rota': v.status==='warn'?'Parado':'Offline';
+    var statusColor = v.status==='on'?'var(--green)': v.status==='warn'?'var(--amber)':'var(--muted)';
+    var active = itrSelectedId===v.id ? ' active':'';
+    return '<div class="veh-list-item'+active+'" onclick="itrSelectVeh('+v.id+')" id="vli-'+v.id+'">'
+      +'<div class="vli-top">'
+      +'<span class="vli-plate">'+v.plate+'</span>'
+      +'<span class="vli-status"><svg width="7" height="7"><circle cx="3.5" cy="3.5" r="3.5" fill="'+statusColor+'"/></svg>'+statusLabel+'</span>'
+      +'</div>'
+      +'<div class="vli-model">'+v.model+'</div>'
+      +'<div class="vli-meta">'
+      +'<span>🏎 '+v.speed+' km/h</span>'
+      +'<span>📍 '+v.loc.split(',')[0]+'</span>'
+      +'<span>🔋 '+v.bat+'</span>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+}
+
+// ── Renderizar tabela ─────────────────────────────────────────────────────────
+function itrRenderTable() {
+  var tbody = document.getElementById('itrTableBody');
+  if(!tbody) return;
+  tbody.innerHTML = ITR_VEHS.map(function(v){
+    var statusLabel = v.status==='on'?'Em rota': v.status==='warn'?'Parado':'Offline';
+    var tagCls = v.status==='on'?'ok': v.status==='warn'?'pend':'err';
+    var sdotCls = v.status==='on'?'on': v.status==='warn'?'warn':'off';
+    var ignTag = v.ign==='Ligada'?'<span class="tag ok">Ligada</span>':'<span class="tag err">Desligada</span>';
+    return '<tr id="itr-row-'+v.id+'" onclick="itrSelectVeh('+v.id+')" style="cursor:pointer">'
+      +'<td><span class="veh-plate">'+v.plate+'</span></td>'
+      +'<td class="bold">'+v.model+'</td>'
+      +'<td>'+v.driver+'</td>'
+      +'<td style="font-size:11px;color:var(--muted)">'+v.loc+'</td>'
+      +'<td style="font-family:var(--mono);font-size:12px">'+v.speed+' km/h</td>'
+      +'<td>'+ignTag+'</td>'
+      +'<td><span style="display:flex;align-items:center;gap:5px"><div class="sdot '+sdotCls+'"></div><span style="font-size:11px">'+statusLabel+'</span></span></td>'
+      +'<td><button class="btn sm" onclick="event.stopPropagation();itrSelectVeh('+v.id+')">Rastrear</button></td>'
+      +'</tr>';
+  }).join('');
+}
+
+// ── Selecionar veículo ────────────────────────────────────────────────────────
+function itrSelectVeh(id) {
+  itrSelectedId = id;
+  var v = ITR_VEHS[id];
+
+  // Highlight pin no SVG
+  ITR_VEHS.forEach(function(vv){
+    var pinEl = document.getElementById('pin-'+vv.id);
+    if(pinEl) pinEl.classList.toggle('selected', vv.id===id);
+  });
+
+  // Update painel de detalhe
+  var panel = document.getElementById('vehDetailPanel');
+  if(panel){
+    panel.classList.add('show');
+    var el = function(eid){ return document.getElementById(eid); };
+    if(el('vdpPlate'))  el('vdpPlate').textContent  = v.plate;
+    if(el('vdpModel'))  el('vdpModel').textContent  = v.model + ' · ' + v.driver;
+    if(el('vdpSpeed'))  el('vdpSpeed').textContent  = v.speed + ' km/h';
+    if(el('vdpKm'))     el('vdpKm').textContent     = v.km + ' km';
+    if(el('vdpBat'))    el('vdpBat').textContent    = v.bat;
+    if(el('vdpDriver')) el('vdpDriver').textContent = v.driver;
+    if(el('vdpLoc'))    el('vdpLoc').textContent    = v.loc;
+    if(el('vdpTime'))   el('vdpTime').textContent   = v.time;
+    if(el('vdpIgn'))    el('vdpIgn').textContent    = v.ign;
+    var stag = el('vdpStatusTag');
+    if(stag){
+      var sl = v.status==='on'?'Em rota': v.status==='warn'?'Parado':'Offline';
+      var sc = v.status==='on'?'ok': v.status==='warn'?'pend':'err';
+      stag.textContent = sl; stag.className = 'tag '+sc;
+    }
+  }
+
+  // Highlight lista lateral
+  document.querySelectorAll('.veh-list-item').forEach(function(el){ el.classList.remove('active'); });
+  var vli = document.getElementById('vli-'+id);
+  if(vli) vli.classList.add('active');
+
+  // Highlight row na tabela
+  document.querySelectorAll('#itrTableBody tr').forEach(function(r){ r.classList.remove('row-selected'); });
+  var row = document.getElementById('itr-row-'+id);
+  if(row) row.classList.add('row-selected');
+
+  // Centralizar mapa no veículo
+  if(itrFollowing) itrCenterOn(id);
+}
+
+function itrCloseDetail(){
+  var p = document.getElementById('vehDetailPanel');
+  if(p) p.classList.remove('show');
+  itrSelectedId = -1;
+  document.querySelectorAll('.mpin').forEach(function(p){ p.classList.remove('selected'); });
+  document.querySelectorAll('.veh-list-item').forEach(function(el){ el.classList.remove('active'); });
+  document.querySelectorAll('#itrTableBody tr').forEach(function(r){ r.classList.remove('row-selected'); });
+}
+
+// ── Filtros ───────────────────────────────────────────────────────────────────
+function itrFilter(type) {
+  itrFilter_current = type;
+  ['all','on','warn','off'].forEach(function(t){
+    var btn = document.getElementById('mf-'+t);
+    if(btn) btn.classList.toggle('active', t===type);
+  });
+  itrRenderList();
+  // Mostrar/ocultar pins
+  ITR_VEHS.forEach(function(v){
+    var pin = document.getElementById('pin-'+v.id);
+    if(!pin) return;
+    var show = type==='all' || v.status===type ||
+               (type==='on' && v.status==='on') ||
+               (type==='warn' && v.status==='warn') ||
+               (type==='off' && v.status==='off');
+    pin.style.opacity = show ? '1' : '0.15';
+  });
+  var counts = {on:3, warn:1, off:1};
+  var sc = document.getElementById('itrSideCount');
+  if(sc){
+    if(type==='all') sc.textContent = '5 veículos · 3 em rota';
+    else sc.textContent = counts[type]+' veículo(s) · filtro: '+type;
+  }
+}
+
+// ── Zoom & Pan ────────────────────────────────────────────────────────────────
+function itrZoom(factor) {
+  var svg = document.getElementById('itrSVG');
+  if(!svg) return;
+  var cx = itrViewBox.x + itrViewBox.w/2;
+  var cy = itrViewBox.y + itrViewBox.h/2;
+  itrViewBox.w = Math.max(200, Math.min(1200, itrViewBox.w / factor));
+  itrViewBox.h = Math.max(120, Math.min(700,  itrViewBox.h / factor));
+  itrViewBox.x = cx - itrViewBox.w/2;
+  itrViewBox.y = cy - itrViewBox.h/2;
+  svg.setAttribute('viewBox', itrViewBox.x+' '+itrViewBox.y+' '+itrViewBox.w+' '+itrViewBox.h);
+}
+
+function itrReset() {
+  itrViewBox = {x:0, y:0, w:780, h:440};
+  var svg = document.getElementById('itrSVG');
+  if(svg) svg.setAttribute('viewBox','0 0 780 440');
+}
+
+var itrFollowEnabled = false;
+function itrToggleFollow() {
+  itrFollowEnabled = !itrFollowEnabled;
+  var btn = document.getElementById('btnFollow');
+  if(btn) btn.style.color = itrFollowEnabled ? 'var(--accent)' : '';
+}
+
+function itrCenterOn(id) {
+  var p = itrPos[id];
+  if(!p) return;
+  var svg = document.getElementById('itrSVG');
+  if(!svg) return;
+  itrViewBox.x = p.x - itrViewBox.w/2;
+  itrViewBox.y = p.y - itrViewBox.h/2;
+  svg.setAttribute('viewBox', itrViewBox.x+' '+itrViewBox.y+' '+itrViewBox.w+' '+itrViewBox.h);
+}
+
+// ── Animação de movimento ─────────────────────────────────────────────────────
+function itrAnimate() {
+  itrAnimFrame++;
+  ITR_VEHS.forEach(function(v, i){
+    if(v.status !== 'on') return; // só veículos em rota se movem
+    if(v.path.length < 2) return;
+    var pos = itrPos[i];
+    var target = v.path[pos.pathIdx];
+    var next   = v.path[(pos.pathIdx+1) % v.path.length];
+    // interpolação suave
+    pos.t += 0.004 * (v.speed / 50);
+    if(pos.t >= 1){
+      pos.t = 0;
+      pos.pathIdx = (pos.pathIdx+1) % v.path.length;
+      target = v.path[pos.pathIdx];
+      next   = v.path[(pos.pathIdx+1) % v.path.length];
+    }
+    pos.x = target[0] + (next[0]-target[0]) * pos.t;
+    pos.y = target[1] + (next[1]-target[1]) * pos.t;
+
+    var pin = document.getElementById('pin-'+v.id);
+    if(pin){
+      pin.setAttribute('transform','translate('+pos.x.toFixed(1)+','+pos.y.toFixed(1)+')');
+    }
+
+    // Atualizar velocidade no SVG (simular leve variação)
+    if(itrAnimFrame % 80 === 0){
+      var variation = Math.floor((Math.random()-0.5)*8);
+      var newSpeed = Math.max(20, Math.min(90, v.speed + variation));
+      v.speed = newSpeed;
+      // Atualizar label velocidade no pin
+      var speedTexts = pin ? pin.querySelectorAll('text') : [];
+      speedTexts.forEach(function(t){
+        if(t.textContent && t.textContent.includes('km/h')){
+          t.textContent = newSpeed+'km/h';
+        }
+      });
+      // Atualizar dados se selecionado
+      if(itrSelectedId === v.id){
+        var sdEl = document.getElementById('vdpSpeed');
+        if(sdEl) sdEl.textContent = newSpeed+' km/h';
+      }
+      // Atualizar lista lateral
+      var vli = document.getElementById('vli-'+v.id);
+      if(vli){
+        var spans = vli.querySelectorAll('.vli-meta span');
+        if(spans[0]) spans[0].textContent = '🏎 '+newSpeed+' km/h';
+      }
+    }
+
+    // Se seguindo o veículo selecionado
+    if(itrFollowEnabled && itrSelectedId === v.id){
+      itrCenterOn(v.id);
+    }
+  });
+
+  requestAnimationFrame(itrAnimate);
+}
+
+// ── Pan com drag ──────────────────────────────────────────────────────────────
+(function(){
+  var dragging = false, lastX=0, lastY=0;
+  document.addEventListener('mousedown', function(e){
+    if(e.target.closest('#itrMapCanvas')){
+      dragging=true; lastX=e.clientX; lastY=e.clientY;
+    }
+  });
+  document.addEventListener('mousemove', function(e){
+    if(!dragging) return;
+    var svg = document.getElementById('itrSVG');
+    if(!svg) return;
+    var rect = svg.getBoundingClientRect();
+    var scaleX = itrViewBox.w / rect.width;
+    var scaleY = itrViewBox.h / rect.height;
+    itrViewBox.x -= (e.clientX-lastX)*scaleX;
+    itrViewBox.y -= (e.clientY-lastY)*scaleY;
+    svg.setAttribute('viewBox', itrViewBox.x+' '+itrViewBox.y+' '+itrViewBox.w+' '+itrViewBox.h);
+    lastX=e.clientX; lastY=e.clientY;
+  });
+  document.addEventListener('mouseup', function(){ dragging=false; });
+
+  // Scroll zoom
+  document.addEventListener('wheel', function(e){
+    if(!e.target.closest('#itrMapCanvas')) return;
+    e.preventDefault();
+    itrZoom(e.deltaY < 0 ? 1.1 : 0.91);
+  }, {passive:false});
+})();
+
+// ── Init automático quando a aba é aberta ─────────────────────────────────────
+var itrInited = false;
+var _origSwitchApiTab = typeof switchApiTab === 'function' ? switchApiTab : null;
+// Monkeypatching do switchApiTab para iniciar mapa
+(function(){
+  var origFn = window.switchApiTab;
+  window.switchApiTab = function(tab){
+    if(origFn) origFn(tab);
+    if(tab === 'itr' && !itrInited){
+      itrInited = true;
+      setTimeout(itrInit, 80);
+    }
+  };
+})();
+
+
+</script>
+
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0f14;--bg2:#13161e;--bg3:#1a1e28;--bg4:#20263a;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+  --text:#e8eaf0;--muted:#6b7280;--muted2:#9ca3af;
+  --accent:#3b82f6;--accent2:#06b6d4;
+  --green:#10b981;--amber:#f59e0b;--red:#ef4444;--purple:#8b5cf6;--pink:#ec4899;
+  --font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
+  --radius:10px;--radius-lg:14px;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+
+/* ===== TOPBAR ===== */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:52px;background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200}
+.topbar-brand{display:flex;align-items:center;gap:10px}
+.brand-logo{display:flex;align-items:center;justify-content:center;width:30px;height:30px;background:var(--accent);border-radius:8px;font-size:14px;font-weight:700;color:#fff}
+.brand-name{font-size:14px;font-weight:600;color:var(--text)}
+.brand-sub{font-size:10px;color:var(--muted);margin-top:1px}
+.topbar-center{display:flex;align-items:center;gap:16px}
+.sys-badge{display:flex;align-items:center;gap:5px;font-size:11px;padding:4px 10px;border-radius:20px;border:1px solid;cursor:default}
+.sys-badge.on{background:rgba(16,185,129,0.1);color:var(--green);border-color:rgba(16,185,129,0.25)}
+.sys-badge.warn{background:rgba(245,158,11,0.1);color:var(--amber);border-color:rgba(245,158,11,0.25)}
+.dot-live{width:6px;height:6px;border-radius:50%;background:currentColor;animation:blink 1.5s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.notif-btn{position:relative;cursor:pointer;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:14px;transition:background .15s}
+.notif-btn:hover{background:var(--bg4)}
+.notif-badge{position:absolute;top:-4px;right:-4px;width:16px;height:16px;border-radius:50%;background:var(--red);font-size:9px;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg2)}
+.topbar-clock{font-size:12px;color:var(--muted);font-family:var(--mono)}
+.user-chip{display:flex;align-items:center;gap:8px;cursor:pointer;padding:4px 10px 4px 4px;border-radius:20px;border:1px solid var(--border);background:var(--bg3);transition:background .15s}
+.user-chip:hover{background:var(--bg4)}
+.avatar{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--purple));display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff}
+.user-name{font-size:12px;font-weight:500}
+
+/* ===== LAYOUT ===== */
+.layout{display:grid;grid-template-columns:200px 1fr;min-height:calc(100vh - 52px)}
+
+/* ===== SIDEBAR ===== */
+.sidebar{background:var(--bg2);border-right:1px solid var(--border);padding:12px 0;display:flex;flex-direction:column;overflow-y:auto}
+.nav-group{margin-bottom:4px}
+.nav-label{padding:8px 14px 4px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:500}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 14px;font-size:13px;color:var(--muted2);cursor:pointer;border-left:2px solid transparent;transition:all .15s;text-decoration:none;user-select:none}
+.nav-item:hover{color:var(--text);background:rgba(255,255,255,0.04)}
+.nav-item.active{color:var(--text);background:rgba(59,130,246,0.1);border-left-color:var(--accent)}
+.nav-icon{font-size:15px;width:18px;text-align:center;opacity:.8}
+.nav-badge{margin-left:auto;font-size:10px;padding:2px 7px;border-radius:10px;font-family:var(--mono);font-weight:500}
+.nav-badge.blue{background:rgba(59,130,246,0.2);color:var(--accent)}
+.nav-badge.red{background:rgba(239,68,68,0.2);color:var(--red)}
+.nav-badge.amber{background:rgba(245,158,11,0.2);color:var(--amber)}
+.sidebar-footer{margin-top:auto;padding:12px 14px;border-top:1px solid var(--border)}
+.ver-tag{font-size:10px;color:var(--muted);font-family:var(--mono)}
+
+/* ===== PAGES ===== */
+.page{display:none;padding:22px;overflow-y:auto;min-height:calc(100vh - 52px)}
+.page.active{display:block}
+
+/* ===== COMMON ===== */
+.page-header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:22px}
+.page-title{font-size:19px;font-weight:500}
+.page-sub{font-size:11px;color:var(--muted);margin-top:3px;font-family:var(--mono)}
+.actions{display:flex;gap:8px;align-items:center}
+.btn{font-size:12px;font-weight:500;font-family:var(--font);padding:7px 14px;border-radius:8px;cursor:pointer;border:1px solid var(--border2);background:var(--bg3);color:var(--text);transition:all .15s}
+.btn:hover{background:var(--bg4);border-color:rgba(255,255,255,.2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:#2563eb}
+.btn.danger{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.3);color:var(--red)}
+.btn.sm{padding:5px 10px;font-size:11px}
+
+.section-title{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.card-header{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--border);background:var(--bg3)}
+.card-title{font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px}
+.card-body{padding:14px 16px}
+
+.tag{display:inline-block;font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500}
+.tag.ok{background:rgba(16,185,129,.15);color:var(--green)}
+.tag.pend{background:rgba(245,158,11,.15);color:var(--amber)}
+.tag.err{background:rgba(239,68,68,.15);color:var(--red)}
+.tag.info{background:rgba(59,130,246,.15);color:var(--accent)}
+.tag.purple{background:rgba(139,92,246,.15);color:var(--purple)}
+
+/* ===== KPI CARDS ===== */
+.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:22px}
+.kpi{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:15px;position:relative;overflow:hidden;transition:border-color .2s,transform .2s}
+.kpi:hover{border-color:var(--border2);transform:translateY(-1px)}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.kpi.blue::before{background:var(--accent)}.kpi.green::before{background:var(--green)}.kpi.amber::before{background:var(--amber)}.kpi.red::before{background:var(--red)}.kpi.purple::before{background:var(--purple)}
+.kpi-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.kpi-value{font-size:26px;font-weight:300;font-family:var(--mono)}
+.kpi-footer{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
+.kpi-delta{font-size:10px;display:flex;align-items:center;gap:3px}
+.kpi-delta.up{color:var(--green)}.kpi-delta.down{color:var(--red)}.kpi-delta.neu{color:var(--muted)}
+.kpi-icon{font-size:20px;opacity:.25}
+
+/* ===== GRID LAYOUTS ===== */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.g-5-3{display:grid;grid-template-columns:5fr 3fr;gap:16px}
+.g-3-5{display:grid;grid-template-columns:3fr 5fr;gap:16px}
+.mb{margin-bottom:16px}
+.mb2{margin-bottom:22px}
+
+/* ===== TABLE ===== */
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{text-align:left;color:var(--muted);font-weight:400;padding:5px 10px 9px;font-size:10px;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border)}
+.tbl td{padding:9px 10px;color:var(--muted2);border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:rgba(255,255,255,.025);color:var(--text)}
+.tbl .bold{color:var(--text);font-weight:500}
+
+/* ===== SEARCH & FILTER ===== */
+.filter-bar{display:flex;gap:8px;margin-bottom:14px;align-items:center}
+.search-box{display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 12px;flex:1}
+.search-box input{background:none;border:none;color:var(--text);font-family:var(--font);font-size:13px;outline:none;width:100%}
+.search-box input::placeholder{color:var(--muted)}
+.filter-select{background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12px;padding:6px 10px;outline:none;cursor:pointer}
+.filter-select option{background:var(--bg2)}
+
+/* ===== INTEGRATION LOGOS ===== */
+.int-logo{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
+.clf{background:linear-gradient(135deg,#0ea5e9,#0284c7)}
+.itr{background:linear-gradient(135deg,#f97316,#ea580c)}
+.psg{background:linear-gradient(135deg,#8b5cf6,#7c3aed)}
+.hcm{background:linear-gradient(135deg,#10b981,#059669)}
+
+/* ===== CHECKLIST ===== */
+.cl-item{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px}
+.cl-item:last-child{border-bottom:none}
+.cl-box{width:17px;height:17px;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px}
+.cl-box.done{background:rgba(16,185,129,.2);color:var(--green);border:1px solid rgba(16,185,129,.3)}
+.cl-box.todo{background:transparent;border:1px solid var(--border2)}
+.cl-box.fail{background:rgba(239,68,68,.2);color:var(--red);border:1px solid rgba(239,68,68,.3)}
+.cl-box.skip{background:rgba(245,158,11,.2);color:var(--amber);border:1px solid rgba(245,158,11,.3)}
+.cl-label{flex:1;color:var(--muted2)}
+.cl-who{color:var(--muted);font-size:10px;font-family:var(--mono)}
+.cl-prog{height:4px;background:var(--bg4);border-radius:2px;margin-top:8px;overflow:hidden}
+.cl-prog-bar{height:100%;border-radius:2px;transition:width .5s}
+
+/* ===== VEHICLE ===== */
+.veh-row{display:flex;align-items:center;gap:10px;padding:9px 12px;background:rgba(255,255,255,.025);border:1px solid var(--border);border-radius:8px;font-size:12px;cursor:pointer;transition:border-color .15s,background .15s}
+.veh-row:hover{border-color:var(--border2);background:rgba(255,255,255,.04)}
+.veh-plate{font-family:var(--mono);font-size:11px;background:rgba(255,255,255,.08);padding:2px 8px;border-radius:4px;color:var(--text)}
+.veh-name{flex:1;color:var(--muted2)}
+.veh-status{display:flex;align-items:center;gap:5px;font-size:11px;font-family:var(--mono);color:var(--muted)}
+.sdot{width:7px;height:7px;border-radius:50%}
+.sdot.on{background:var(--green);box-shadow:0 0 5px rgba(16,185,129,.5)}
+.sdot.off{background:var(--muted)}
+.sdot.warn{background:var(--amber)}
+
+/* ===== ALERTS ===== */
+.alert-item{display:flex;align-items:flex-start;gap:10px;padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;transition:background .15s}
+.alert-item:hover{background:rgba(255,255,255,.03)}
+.alert-item:last-child{border-bottom:none}
+.alert-icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.ai-crit{background:rgba(239,68,68,.15);color:var(--red)}
+.ai-warn{background:rgba(245,158,11,.15);color:var(--amber)}
+.ai-info{background:rgba(59,130,246,.15);color:var(--accent)}
+.ai-ok{background:rgba(16,185,129,.15);color:var(--green)}
+.alert-body{flex:1}
+.alert-title{font-size:12px;font-weight:500;color:var(--text)}
+.alert-desc{font-size:11px;color:var(--muted);margin-top:2px}
+.alert-meta{font-size:10px;color:var(--muted);margin-top:4px;display:flex;gap:8px}
+.alert-src{font-size:10px;padding:2px 7px;border-radius:8px;font-weight:500;flex-shrink:0;margin-top:2px}
+.as-clf{background:rgba(14,165,233,.15);color:#38bdf8}.as-itr{background:rgba(249,115,22,.15);color:#fb923c}.as-psg{background:rgba(139,92,246,.15);color:#a78bfa}.as-hcm{background:rgba(16,185,129,.15);color:#34d399}.as-sys{background:rgba(255,255,255,.07);color:var(--muted)}
+
+/* ===== ACTIVITY ===== */
+.act-item{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px}
+.act-item:last-child{border-bottom:none}
+.act-time{width:52px;color:var(--muted);font-family:var(--mono);font-size:10px;padding-top:2px;flex-shrink:0}
+.act-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.act-content{flex:1}
+.act-title{color:var(--muted2)}
+.act-src{font-size:10px;color:var(--muted);margin-top:2px}
+.act-src span{display:inline-block;padding:1px 6px;border-radius:8px;margin-right:4px}
+
+/* ===== SINISTRO ===== */
+.sin-card{padding:11px 13px;border-radius:9px;border:1px solid var(--border);background:rgba(255,255,255,.02);margin-bottom:8px;cursor:pointer;transition:border-color .15s}
+.sin-card:hover{border-color:var(--border2)}
+.sin-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.sin-id{font-family:var(--mono);font-size:10px;color:var(--muted)}
+.sin-desc{font-size:12px;color:var(--text)}
+.sin-meta{font-size:10px;color:var(--muted);margin-top:5px;display:flex;gap:10px}
+
+/* ===== HCM ===== */
+.hcm-stat{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:9px;padding:12px;text-align:center}
+.hcm-val{font-size:22px;font-weight:300;font-family:var(--mono)}
+.hcm-lbl{font-size:10px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.05em}
+
+/* ===== CHART CONTAINERS ===== */
+.chart-wrap{position:relative;height:200px}
+.chart-wrap-sm{position:relative;height:160px}
+.chart-wrap-lg{position:relative;height:260px}
+
+/* ===== MAP PLACEHOLDER ===== */
+.map-area{background:var(--bg3);border-radius:10px;border:1px solid var(--border);height:320px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.map-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);background-size:40px 40px}
+.map-pin{position:absolute;transform:translate(-50%,-100%);cursor:pointer;user-select:none}
+.map-pin-dot{width:12px;height:12px;border-radius:50%;border:2px solid rgba(255,255,255,.5);animation:pingAnim 2s infinite}
+@keyframes pingAnim{0%{box-shadow:0 0 0 0 rgba(16,185,129,.5)}70%{box-shadow:0 0 0 8px rgba(16,185,129,0)}100%{box-shadow:0 0 0 0 rgba(16,185,129,0)}}
+.map-tooltip{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid var(--border2);border-radius:7px;padding:5px 9px;font-size:11px;white-space:nowrap;pointer-events:none;display:none}
+.map-pin:hover .map-tooltip{display:block}
+.map-controls{position:absolute;top:10px;right:10px;display:flex;flex-direction:column;gap:4px}
+.map-btn{width:28px;height:28px;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;transition:background .15s}
+.map-btn:hover{background:var(--bg4)}
+.map-legend{position:absolute;bottom:10px;left:10px;display:flex;gap:8px}
+.map-leg-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted);background:rgba(0,0,0,.5);padding:3px 8px;border-radius:5px}
+
+/* ===== COLAB CARD ===== */
+.colab-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:13px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .15s}
+.colab-card:hover{border-color:var(--border2);background:var(--bg4)}
+.colab-av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;flex-shrink:0}
+.colab-info{flex:1;min-width:0}
+.colab-name{font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.colab-role{font-size:11px;color:var(--muted)}
+.colab-meta{font-size:10px;color:var(--muted);margin-top:2px}
+
+/* ===== MODAL ===== */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:1000;align-items:center;justify-content:center}
+.overlay.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-lg);width:540px;max-width:92vw;max-height:90vh;overflow-y:auto;animation:mIn .2s ease}
+@keyframes mIn{from{transform:scale(.95);opacity:0}}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg2);z-index:1}
+.modal-title{font-size:15px;font-weight:500}
+.modal-close{width:28px;height:28px;border-radius:7px;background:none;border:none;color:var(--muted);font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.modal-close:hover{background:rgba(255,255,255,.08);color:var(--text)}
+.modal-body{padding:20px}
+.modal-foot{display:flex;justify-content:flex-end;gap:8px;padding:14px 20px;border-top:1px solid var(--border)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:13px}
+.form-row.full{grid-template-columns:1fr}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fg label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:500}
+.fg input,.fg select,.fg textarea{background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;font-family:var(--font);outline:none;transition:border-color .15s;width:100%}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--accent)}
+.fg select option{background:var(--bg2)}
+.fg textarea{resize:vertical;min-height:80px}
+
+/* ===== TOAST ===== */
+.toast-wrap{position:fixed;bottom:80px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+.toast{background:var(--bg2);border:1px solid var(--border2);border-radius:10px;padding:11px 16px;font-size:13px;color:var(--text);box-shadow:0 4px 20px rgba(0,0,0,.5);animation:toastIn .3s ease;max-width:300px}
+@keyframes toastIn{from{transform:translateX(30px);opacity:0}}
+.toast.success{border-color:rgba(16,185,129,.4);background:rgba(16,185,129,.08)}
+.toast.error{border-color:rgba(239,68,68,.4);background:rgba(239,68,68,.08)}
+.toast.info{border-color:rgba(59,130,246,.4);background:rgba(59,130,246,.08)}
+
+/* ===== FAB ===== */
+.fab-wrap{position:fixed;bottom:20px;right:20px;display:flex;gap:8px;z-index:300}
+.fab{height:38px;padding:0 15px;border-radius:19px;cursor:pointer;font-size:12px;font-weight:500;font-family:var(--font);border:none;display:flex;align-items:center;gap:6px;transition:all .2s;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+.fab.main{background:var(--accent);color:#fff}
+.fab.main:hover{background:#2563eb;transform:translateY(-1px)}
+.fab.sec{background:var(--bg2);color:var(--text);border:1px solid var(--border2)}
+.fab.sec:hover{background:var(--bg3);transform:translateY(-1px)}
+
+/* ===== PROGRESS BAR ===== */
+.prog-bar{height:6px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;border-radius:3px;transition:width .6s}
+
+/* ===== TABS ===== */
+.tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:14px}
+.tab{padding:8px 14px;font-size:12px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--text);border-bottom-color:var(--accent)}
+
+/* ===== LINK BTN ===== */
+.lnk{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--accent);cursor:pointer;text-decoration:none;background:none;border:none;font-family:var(--font);transition:opacity .15s}
+.lnk:hover{opacity:.7}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:1280px){.kpi-grid{grid-template-columns:repeat(3,1fr)}.g-5-3,.g-3-5{grid-template-columns:1fr}}
+@media(max-width:900px){.layout{grid-template-columns:1fr}.sidebar{display:none}.kpi-grid{grid-template-columns:repeat(2,1fr)}.g2,.g3{grid-template-columns:1fr}.page{padding:14px}}
+
+/* ===== SKELETON ===== */
+.skel{background:var(--bg3);border-radius:6px;animation:skPulse 1.5s infinite}
+@keyframes skPulse{0%,100%{opacity:.6}50%{opacity:.3}}
+
+/* ===== MINI CHARTS NAS ABAS ===== */
+.tab-charts{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.tc{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:13px 14px;position:relative;overflow:hidden;transition:border-color .2s}
+.tc:hover{border-color:var(--border2)}
+.tc-accent{position:absolute;top:0;left:0;right:0;height:2px}
+.tc-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.tc-value{font-size:20px;font-weight:300;font-family:var(--mono);margin-bottom:2px}
+.tc-delta{font-size:10px;margin-bottom:8px}
+.tc-delta.up{color:var(--green)}.tc-delta.down{color:var(--red)}.tc-delta.neu{color:var(--muted)}
+.tc-canvas{height:52px;position:relative}
+.tab-charts-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.chart-panel{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .2s}
+.chart-panel:hover{border-color:var(--border2)}
+.cp-head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border);background:rgba(128,128,128,.04)}
+.cp-title{font-size:11px;font-weight:500;color:var(--muted2)}
+.cp-badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:500}
+.cp-body{padding:10px 14px;height:130px;position:relative}
+
+/* ===== MAPA INTERATIVO ITURAN ===== */
+.itr-map-layout{display:grid;grid-template-columns:1fr 300px;gap:0;border:1px solid var(--border);border-radius:12px;overflow:hidden;height:480px;margin-bottom:14px}
+.itr-map-canvas{position:relative;background:var(--bg3);overflow:hidden;flex:1}
+.itr-map-canvas svg{width:100%;height:100%;display:block}
+
+/* roads */
+.map-road{stroke:var(--bg4);stroke-width:3;fill:none;opacity:.7}
+.map-road-main{stroke-width:5;opacity:.5}
+.map-road-label{font-size:9px;fill:var(--muted);font-family:var(--mono)}
+
+/* pins */
+.mpin{cursor:pointer;transition:transform .15s}
+.mpin:hover{transform:scale(1.2)}
+.mpin circle.pulse{animation:mpulse 2s ease-out infinite}
+@keyframes mpulse{
+  0%{r:8;opacity:.8}
+  70%{r:20;opacity:0}
+  100%{r:8;opacity:0}
+}
+.mpin.selected circle.inner{stroke-width:3;stroke:white}
+
+/* rota trail */
+.route-trail{stroke-dasharray:6 4;stroke-linecap:round;animation:dash 1.2s linear infinite;opacity:.6}
+@keyframes dash{to{stroke-dashoffset:-20}}
+
+/* painel lateral */
+.itr-side{background:var(--bg2);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;transition:background .3s}
+.itr-side-header{padding:14px 16px;border-bottom:1px solid var(--border);background:var(--bg3);flex-shrink:0}
+.itr-side-title{font-size:12px;font-weight:500;color:var(--muted2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
+.itr-side-count{font-size:11px;color:var(--muted);font-family:var(--mono)}
+
+/* lista de veículos no painel */
+.veh-list{flex:1;overflow-y:auto;padding:8px}
+.veh-list-item{padding:10px 12px;border-radius:9px;cursor:pointer;transition:background .15s;margin-bottom:4px;border:1px solid transparent}
+.veh-list-item:hover{background:rgba(128,128,128,.07)}
+.veh-list-item.active{background:rgba(59,130,246,.1);border-color:rgba(59,130,246,.25)}
+.vli-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px}
+.vli-plate{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--text)}
+.vli-status{display:flex;align-items:center;gap:5px;font-size:10px}
+.vli-model{font-size:11px;color:var(--muted);margin-bottom:4px}
+.vli-meta{display:flex;gap:10px;font-size:10px;color:var(--muted)}
+.vli-meta span{display:flex;align-items:center;gap:3px}
+
+/* painel de detalhe expandido */
+.veh-detail-panel{position:absolute;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border2);padding:14px 16px;transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);border-radius:12px 12px 0 0}
+.veh-detail-panel.show{transform:translateY(0)}
+.vdp-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.vdp-plate{font-family:var(--mono);font-size:15px;font-weight:700;color:var(--text)}
+.vdp-close{width:24px;height:24px;border-radius:6px;background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.vdp-close:hover{background:rgba(128,128,128,.1);color:var(--text)}
+.vdp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.vdp-stat{background:var(--bg3);border-radius:8px;padding:8px 10px;text-align:center}
+.vdp-val{font-family:var(--mono);font-size:16px;font-weight:500;color:var(--text)}
+.vdp-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+.vdp-info{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.vdp-field{font-size:11px}
+.vdp-field-lbl{color:var(--muted);margin-bottom:1px}
+.vdp-field-val{color:var(--text);font-family:var(--mono);font-size:12px}
+
+/* speedometer arc */
+.speed-arc{transform:rotate(-210deg);transform-origin:50% 50%}
+.speed-needle{transform-origin:50% 50%;transition:transform .8s cubic-bezier(.4,0,.2,1)}
+
+/* filtros do mapa */
+.map-filters{display:flex;gap:6px;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--bg3);flex-shrink:0}
+.mf-btn{font-size:10px;padding:4px 10px;border-radius:20px;cursor:pointer;border:1px solid var(--border2);background:var(--bg3);color:var(--muted2);transition:all .15s;font-family:var(--font);font-weight:500}
+.mf-btn:hover{color:var(--text);border-color:var(--border2)}
+.mf-btn.active{color:#fff;border-color:transparent}
+.mf-btn.f-all.active{background:var(--accent)}
+.mf-btn.f-on.active{background:var(--green)}
+.mf-btn.f-warn.active{background:var(--amber)}
+.mf-btn.f-off.active{background:var(--muted)}
+
+/* controles mapa */
+.map-ctls{position:absolute;top:10px;right:10px;display:flex;flex-direction:column;gap:4px;z-index:10}
+.mcbtn{width:28px;height:28px;background:var(--bg2);border:1px solid var(--border2);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;transition:background .15s;color:var(--text)}
+.mcbtn:hover{background:var(--bg4)}
+
+/* legenda mapa */
+.map-legend-bar{position:absolute;bottom:10px;left:10px;display:flex;gap:8px;z-index:5}
+.mlb{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted);background:rgba(0,0,0,.5);backdrop-filter:blur(4px);padding:4px 9px;border-radius:8px}
+
+/* badge live */
+.live-badge{position:absolute;top:10px;left:10px;display:flex;align-items:center;gap:5px;font-size:10px;color:var(--green);background:rgba(0,0,0,.5);backdrop-filter:blur(4px);padding:4px 10px;border-radius:8px;z-index:5;font-weight:500}
+
+/* highlight ao selecionar na tabela */
+.tbl tr.row-selected td{background:rgba(59,130,246,.08);color:var(--text)}
+
+</style>
+</head>
+<body>
+
+<!-- ========== TOPBAR ========== -->
+<header class="topbar">
+  <div class="topbar-brand">
+    <div class="brand-logo">A</div>
+    <div>
+      <div class="brand-name">APPA Serviços</div>
+      <div class="brand-sub">Mesa de Operação</div>
+    </div>
+  </div>
+  <div class="topbar-center">
+    <div class="sys-badge on"><span class="dot-live"></span>CLF Online</div>
+    <div class="sys-badge on"><span class="dot-live"></span>Ituran Live</div>
+    <div class="sys-badge warn"><span class="dot-live"></span>Porto Seguro</div>
+    <div class="sys-badge on"><span class="dot-live"></span>HCM Online</div>
+  </div>
+  <div class="topbar-right">
+    <div class="topbar-clock" id="clock">--:--:--</div>
+    <div class="notif-btn" onclick="navTo('alertas')">🔔<span class="notif-badge" id="notifCount">5</span></div>
+    <div class="user-chip">
+      <div class="avatar">ER</div>
+      <span class="user-name">Elvis Reis</span>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+
+<!-- ========== SIDEBAR ========== -->
+<nav class="sidebar">
+  <div class="nav-group">
+    <div class="nav-label">Principal</div>
+    <div class="nav-item active" data-page="dashboard" onclick="navTo('dashboard')">
+      <span class="nav-icon">⊞</span> Dashboard
+    </div>
+    <div class="nav-item" data-page="alertas" onclick="navTo('alertas')">
+      <span class="nav-icon">🔔</span> Alertas
+      <span class="nav-badge red" id="sideAlerts">5</span>
+    </div>
+    <div class="nav-item" data-page="ocorrencias" onclick="navTo('ocorrencias')">
+      <span class="nav-icon">📌</span> Ocorrências
+      <span class="nav-badge amber">7</span>
+    </div>
+  </div>
+  <div class="nav-group">
+    <div class="nav-label">Integrações</div>
+    <div class="nav-item" data-page="checklist" onclick="navTo('checklist')">
+      <span class="nav-icon">✅</span> Check List Fácil
+      <span class="nav-badge blue">12</span>
+    </div>
+    <div class="nav-item" data-page="rastreamento" onclick="navTo('rastreamento')">
+      <span class="nav-icon">📡</span> Ituran
+    </div>
+    <div class="nav-item" data-page="sinistros" onclick="navTo('sinistros')">
+      <span class="nav-icon">🛡</span> Porto Seguro
+      <span class="nav-badge red">3</span>
+    </div>
+    <div class="nav-item" data-page="colaboradores" onclick="navTo('colaboradores')">
+      <span class="nav-icon">👥</span> HCM Teknisa
+    </div>
+  </div>
+  <div class="nav-group">
+    <div class="nav-label">Análise</div>
+    <div class="nav-item" data-page="relatorios" onclick="navTo('relatorios')">
+      <span class="nav-icon">📊</span> Relatórios
+    </div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="ver-tag">v2.4.1 — Mai 2025</div>
+  </div>
+</nav>
+
+<!-- ========== PAGES ========== -->
+<div style="overflow-y:auto">
+
+<!-- ===== PAGE: DASHBOARD ===== -->
+<div class="page active" id="page-dashboard">
+
+  <!-- CABEÇALHO DA MESA -->
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 22px 0;margin-bottom:0">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted2)"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        <span style="font-size:15px;font-weight:600;color:var(--text)">Mesa de Operação</span>
+      </div>
+      <span style="font-size:11px;font-weight:500;padding:3px 10px;border-radius:20px;background:rgba(245,158,11,0.15);color:var(--amber);border:1px solid rgba(245,158,11,0.3)">Dados simulados</span>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn sm" onclick="openModal('modalChk')">+ Check List</button>
+      <button class="btn primary sm" onclick="openModal('modalOcc')">+ Ocorrência</button>
+    </div>
+  </div>
+
+  <!-- KPIs COMPACTOS -->
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;padding:14px 22px">
+    <div class="kpi blue" style="padding:12px"><div class="kpi-label">Check Lists</div><div class="kpi-value" style="font-size:22px">24</div><div class="kpi-footer"><div class="kpi-delta up">↑ 4 hoje</div></div></div>
+    <div class="kpi green" style="padding:12px"><div class="kpi-label">Veículos Ativos</div><div class="kpi-value" style="font-size:22px">31</div><div class="kpi-footer"><div class="kpi-delta neu">24 em rota</div></div></div>
+    <div class="kpi amber" style="padding:12px"><div class="kpi-label">Ocorrências</div><div class="kpi-value" style="font-size:22px">07</div><div class="kpi-footer"><div class="kpi-delta down">2 críticos</div></div></div>
+    <div class="kpi purple" style="padding:12px"><div class="kpi-label">Colaboradores</div><div class="kpi-value" style="font-size:22px">148</div><div class="kpi-footer"><div class="kpi-delta neu">de 162</div></div></div>
+    <div class="kpi red" style="padding:12px"><div class="kpi-label">Sinistros</div><div class="kpi-value" style="font-size:22px">03</div><div class="kpi-footer"><div class="kpi-delta down">1 urgente</div></div></div>
+  </div>
+  <div id="dateLabel" style="padding:4px 22px 8px;font-size:11px;color:var(--muted);font-family:var(--mono)">Carregando...</div>
+
+  <!-- BARRA DE ABAS DE API (modelo da imagem) -->
+  <div style="border-bottom:1px solid var(--border);padding:0 22px;background:var(--bg2);position:sticky;top:52px;z-index:100">
+    <div style="display:flex;align-items:center;gap:0;overflow-x:auto;scrollbar-width:none">
+      <div class="api-tab active" id="apitab-clf" onclick="switchApiTab('clf')" style="display:flex;align-items:center;gap:7px;padding:12px 18px;font-size:13px;cursor:pointer;border-bottom:2px solid var(--accent);color:var(--text);white-space:nowrap;transition:all .15s;user-select:none">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        Checklist Fácil
+      </div>
+      <div class="api-tab" id="apitab-itr" onclick="switchApiTab('itr')" style="display:flex;align-items:center;gap:7px;padding:12px 18px;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted2);white-space:nowrap;transition:all .15s;user-select:none">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        Ituran — Frota
+      </div>
+      <div class="api-tab" id="apitab-psg" onclick="switchApiTab('psg')" style="display:flex;align-items:center;gap:7px;padding:12px 18px;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted2);white-space:nowrap;transition:all .15s;user-select:none">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Porto Seguro
+      </div>
+      <div class="api-tab" id="apitab-hcm" onclick="switchApiTab('hcm')" style="display:flex;align-items:center;gap:7px;padding:12px 18px;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted2);white-space:nowrap;transition:all .15s;user-select:none">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        HCM Teknisa
+      </div>
+      <div class="api-tab" id="apitab-feed" onclick="switchApiTab('feed')" style="display:flex;align-items:center;gap:7px;padding:12px 18px;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted2);white-space:nowrap;transition:all .15s;user-select:none">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Feed de Atividades
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTEÚDO DAS ABAS -->
+  <div style="padding:20px 22px">
+
+    <!-- ABA: CHECKLIST FÁCIL -->
+    <div id="apicontent-clf">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="int-logo clf">CLF</div>
+          <div>
+            <div style="font-size:13px;font-weight:500">Check List Fácil</div>
+            <div style="font-size:11px;color:var(--muted)">Gestão de checklists operacionais · Hoje</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="font-size:12px;font-family:var(--mono);color:var(--green)">16/24 concluídos (67%)</div>
+          <button class="btn sm" onclick="navTo('checklist')">Ver todos →</button>
+          <button class="btn primary sm" onclick="openModal('modalChk')">+ Novo</button>
+        </div>
+      </div>
+
+      <!-- 1. MINI CHARTS CLF -->
+      <div class="tab-charts">
+        <div class="tc"><div class="tc-accent" style="background:var(--green)"></div>
+          <div class="tc-label">Concluídos Hoje</div><div class="tc-value">16</div>
+          <div class="tc-delta up">↑ 4 vs ontem</div>
+          <div class="tc-canvas"><canvas id="spkCLF1"></canvas></div>
+        </div>
+        <div class="tc"><div class="tc-accent" style="background:var(--accent)"></div>
+          <div class="tc-label">Em Andamento</div><div class="tc-value">06</div>
+          <div class="tc-delta neu">—</div>
+          <div class="tc-canvas"><canvas id="spkCLF2"></canvas></div>
+        </div>
+        <div class="tc"><div class="tc-accent" style="background:var(--amber)"></div>
+          <div class="tc-label">Atrasados</div><div class="tc-value">05</div>
+          <div class="tc-delta down">↑ 2 vs ontem</div>
+          <div class="tc-canvas"><canvas id="spkCLF3"></canvas></div>
+        </div>
+        <div class="tc"><div class="tc-accent" style="background:var(--red)"></div>
+          <div class="tc-label">Com Falha</div><div class="tc-value">03</div>
+          <div class="tc-delta down">1 crítico</div>
+          <div class="tc-canvas"><canvas id="spkCLF4"></canvas></div>
+        </div>
+      </div>
+      <!-- Gráficos de tendência CLF -->
+      <div class="tab-charts-2">
+        <div class="chart-panel">
+          <div class="cp-head"><span class="cp-title">Concluídos por semana</span><span class="cp-badge" style="background:rgba(16,185,129,.15);color:var(--green)">↑ 18%</span></div>
+          <div class="cp-body"><canvas id="chartCLFweek"></canvas></div>
+        </div>
+        <div class="chart-panel">
+          <div class="cp-head"><span class="cp-title">Status do dia (distribuição)</span><span class="cp-badge" style="background:rgba(59,130,246,.15);color:var(--accent)">24 total</span></div>
+          <div clas    <!-- ABA: ITURAN -->
+    <div id="apicontent-itr" style="display:none">
+      <!-- cabeçalho -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="int-logo itr">ITR</div>
+          <div>
+            <div style="font-size:13px;font-weight:500">Ituran Rastreamento</div>
+            <div style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px">
+              <span class="dot-live" style="background:var(--green)"></span>Monitoramento em tempo real
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="btn sm" onclick="openModal('modalVeh')">+ Veículo</button>
+          <button class="btn primary sm" onclick="navTo('rastreamento')">Mapa completo →</button>
+        </div>
+      </div>
+
+      <!-- Mini charts ITR -->
+      <div class="tab-charts">
+        <div class="tc"><div class="tc-accent" style="background:var(--green)"></div>
+          <div class="tc-label">Em Rota</div><div class="tc-value">24</div>
+          <div class="tc-delta up">↑ 3 vs ontem</div>
+          <div class="tc-canvas"><canvas id="spkITR1"></canvas></div>
+        </div>
+        <div class="tc"><div class="tc-accent" style="background:var(--amber)"></div>
+          <div class="tc-label">Parados</div><div class="tc-value">04</div>
+          <div class="tc-delta down">1 fora de área</div>
+          <div class="tc-canvas"><canvas id="spkITR2"></canvas></div>
+        </div>
+        <div class="tc"><div class="tc-accent" style="background:var(--accent)"></div>
+          <div class="tc-label">Km Hoje</div><div class="tc-value">1.284</div>
+          <div class="tc-delta up">↑ 12% vs média</div>
+          <div class="tc-canvas"><canvas id="spkITR3"></canvas></div>
+        </div>
+        <div class="tc"><div class="tc-accent" style="background:var(--red)"></div>
+          <div class="tc-label">Offline</div><div class="tc-value">02</div>
+          <div class="tc-delta down">1 sem bateria</div>
+          <div class="tc-canvas"><canvas id="spkITR4"></canvas></div>
+        </div>
+      </div>
+
+      <!-- ═══ MAPA INTERATIVO + PAINEL LATERAL ═══ -->
+      <div class="itr-map-layout">
+
+        <!-- MAPA SVG -->
+        <div class="itr-map-canvas" id="itrMapCanvas">
+          <!-- badge live -->
+          <div class="live-badge"><span class="dot-live" style="background:var(--green)"></span>LIVE · 5 veículos</div>
+
+          <!-- controles zoom -->
+          <div class="map-ctls">
+            <div class="mcbtn" title="Zoom in"  onclick="itrZoom(1.15)">+</div>
+            <div class="mcbtn" title="Zoom out" onclick="itrZoom(0.87)">−</div>
+            <div class="mcbtn" title="Centralizar" onclick="itrReset()" style="font-size:11px">⊕</div>
+            <div class="mcbtn" title="Seguir veículo selecionado" id="btnFollow" onclick="itrToggleFollow()" style="font-size:11px">🎯</div>
+          </div>
+
+          <!-- legenda -->
+          <div class="map-legend-bar">
+            <div class="mlb"><svg width="8" height="8"><circle cx="4" cy="4" r="4" fill="#10b981"/></svg>Em rota</div>
+            <div class="mlb"><svg width="8" height="8"><circle cx="4" cy="4" r="4" fill="#f59e0b"/></svg>Parado</div>
+            <div class="mlb"><svg width="8" height="8"><circle cx="4" cy="4" r="4" fill="#6b7280"/></svg>Offline</div>
+          </div>
+
+          <!-- SVG do mapa -->
+          <svg id="itrSVG" viewBox="0 0 780 440" xmlns="http://www.w3.org/2000/svg" style="background:transparent">
+            <defs>
+              <radialGradient id="bgGrad" cx="50%" cy="50%" r="70%">
+                <stop offset="0%"  stop-color="#1e2535"/>
+                <stop offset="100%" stop-color="#0d0f18"/>
+              </radialGradient>
+              <filter id="glow">
+                <feGaussianBlur stdDeviation="3" result="blur"/>
+                <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+              </filter>
+              <filter id="pinGlow">
+                <feGaussianBlur stdDeviation="4" result="blur"/>
+                <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+              </filter>
+              <marker id="arrowGreen" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+                <path d="M0,0 L6,3 L0,6 Z" fill="#10b981" opacity=".7"/>
+              </marker>
+            </defs>
+
+            <!-- Fundo do mapa -->
+            <rect width="780" height="440" fill="url(#bgGrad)" rx="0"/>
+
+            <!-- Quadras / blocos urbanos simulados -->
+            <g opacity=".18" fill="#2a3550">
+              <rect x="80"  y="60"  width="110" height="70" rx="3"/>
+              <rect x="210" y="60"  width="80"  height="70" rx="3"/>
+              <rect x="310" y="60"  width="130" height="70" rx="3"/>
+              <rect x="460" y="60"  width="90"  height="70" rx="3"/>
+              <rect x="570" y="60"  width="120" height="70" rx="3"/>
+              <rect x="80"  y="160" width="90"  height="90" rx="3"/>
+              <rect x="190" y="160" width="120" height="90" rx="3"/>
+              <rect x="330" y="160" width="80"  height="90" rx="3"/>
+              <rect x="430" y="160" width="140" height="90" rx="3"/>
+              <rect x="590" y="160" width="100" height="90" rx="3"/>
+              <rect x="80"  y="280" width="150" height="80" rx="3"/>
+              <rect x="250" y="280" width="100" height="80" rx="3"/>
+              <rect x="370" y="280" width="120" height="80" rx="3"/>
+              <rect x="510" y="280" width="80"  height="80" rx="3"/>
+              <rect x="610" y="280" width="80"  height="80" rx="3"/>
+              <rect x="80"  y="380" width="80"  height="50" rx="3"/>
+              <rect x="180" y="380" width="120" height="50" rx="3"/>
+              <rect x="320" y="380" width="80"  height="50" rx="3"/>
+              <rect x="420" y="380" width="140" height="50" rx="3"/>
+              <rect x="580" y="380" width="110" height="50" rx="3"/>
+            </g>
+
+            <!-- Avenidas principais -->
+            <g class="map-road map-road-main">
+              <line x1="0" y1="140" x2="780" y2="140"/>
+              <line x1="0" y1="260" x2="780" y2="260"/>
+              <line x1="0" y1="370" x2="780" y2="370"/>
+              <line x1="160" y1="0"  x2="160" y2="440"/>
+              <line x1="310" y1="0"  x2="310" y2="440"/>
+              <line x1="460" y1="0"  x2="460" y2="440"/>
+              <line x1="610" y1="0"  x2="610" y2="440"/>
+            </g>
+            <!-- Ruas secundárias -->
+            <g class="map-road" stroke-width="1.5" opacity=".3">
+              <line x1="0" y1="60"  x2="780" y2="60"/>
+              <line x1="0" y1="200" x2="780" y2="200"/>
+              <line x1="0" y1="320" x2="780" y2="320"/>
+              <line x1="80"  y1="0" x2="80"  y2="440"/>
+              <line x1="240" y1="0" x2="240" y2="440"/>
+              <line x1="385" y1="0" x2="385" y2="440"/>
+              <line x1="535" y1="0" x2="535" y2="440"/>
+              <line x1="690" y1="0" x2="690" y2="440"/>
+            </g>
+
+            <!-- Labels de ruas -->
+            <g>
+              <text class="map-road-label" x="10" y="136">Av. Paulista</text>
+              <text class="map-road-label" x="10" y="256">Via Anchieta</text>
+              <text class="map-road-label" x="10" y="366">Av. Brasil</text>
+              <text class="map-road-label" transform="rotate(-90,155,220)" x="155" y="220">R. Augusta</text>
+              <text class="map-road-label" transform="rotate(-90,305,220)" x="305" y="220">Av. 9 de Julho</text>
+              <text class="map-road-label" transform="rotate(-90,455,220)" x="455" y="220">Rod. Anchieta</text>
+              <text class="map-road-label" transform="rotate(-90,605,220)" x="605" y="220">Via Dutra</text>
+            </g>
+
+            <!-- Trilhas de rota (polylines animadas) -->
+            <!-- ABC-1234 rota verde -->
+            <polyline id="trail-0" points="60,140 160,140 160,60 310,60 310,140 460,140"
+              stroke="#10b981" stroke-width="2.5" fill="none" stroke-linecap="round"
+              class="route-trail" opacity=".5"/>
+            <!-- GHI-9012 rota azul -->
+            <polyline id="trail-2" points="460,260 385,260 385,200 310,200 310,260 160,260"
+              stroke="#3b82f6" stroke-width="2.5" fill="none" stroke-linecap="round"
+              class="route-trail" opacity=".5"/>
+            <!-- MNO-7890 rota lilás -->
+            <polyline id="trail-4" points="690,370 610,370 535,370 460,370 385,370"
+              stroke="#8b5cf6" stroke-width="2.5" fill="none" stroke-linecap="round"
+              class="route-trail" opacity=".5"/>
+
+            <!-- ═══ PINS DOS VEÍCULOS ═══ -->
+
+            <!-- ABC-1234 Em rota verde -->
+            <g id="pin-0" class="mpin" onclick="itrSelectVeh(0)" transform="translate(460,140)">
+              <circle class="pulse" cx="0" cy="0" r="8" fill="#10b981" opacity="0"/>
+              <circle cx="0" cy="0" r="10" fill="#10b981" opacity=".2"/>
+              <circle class="inner" cx="0" cy="0" r="7" fill="#10b981" stroke="rgba(255,255,255,.4)" stroke-width="1.5"/>
+              <text x="0" y="4" text-anchor="middle" font-size="8" fill="white" font-weight="700">🚗</text>
+              <!-- label -->
+              <g transform="translate(0,-20)">
+                <rect x="-22" y="-11" width="44" height="14" rx="4" fill="#0d0f14" opacity=".85"/>
+                <text x="0" y="0" text-anchor="middle" font-size="9" fill="#10b981" font-family="monospace" font-weight="600">ABC-1234</text>
+              </g>
+              <!-- velocidade -->
+              <g transform="translate(0,20)">
+                <rect x="-14" y="-8" width="28" height="12" rx="3" fill="#10b981" opacity=".9"/>
+                <text x="0" y="2" text-anchor="middle" font-size="9" fill="white" font-family="monospace">62km/h</text>
+              </g>
+            </g>
+
+            <!-- DEF-5678 Parado âmbar -->
+            <g id="pin-1" class="mpin" onclick="itrSelectVeh(1)" transform="translate(160,200)">
+              <circle cx="0" cy="0" r="10" fill="#f59e0b" opacity=".2"/>
+              <circle class="inner" cx="0" cy="0" r="7" fill="#f59e0b" stroke="rgba(255,255,255,.4)" stroke-width="1.5"/>
+              <text x="0" y="4" text-anchor="middle" font-size="8" fill="white" font-weight="700">🚘</text>
+              <g transform="translate(0,-20)">
+                <rect x="-22" y="-11" width="44" height="14" rx="4" fill="#0d0f14" opacity=".85"/>
+                <text x="0" y="0" text-anchor="middle" font-size="9" fill="#f59e0b" font-family="monospace" font-weight="600">DEF-5678</text>
+              </g>
+              <g transform="translate(0,20)">
+                <rect x="-18" y="-8" width="36" height="12" rx="3" fill="#f59e0b" opacity=".9"/>
+                <text x="0" y="2" text-anchor="middle" font-size="9" fill="white" font-family="monospace">PARADO</text>
+              </g>
+            </g>
+
+            <!-- GHI-9012 Em rota azul -->
+            <g id="pin-2" class="mpin" onclick="itrSelectVeh(2)" transform="translate(160,260)">
+              <circle class="pulse" cx="0" cy="0" r="8" fill="#3b82f6" opacity="0"/>
+              <circle cx="0" cy="0" r="10" fill="#3b82f6" opacity=".2"/>
+              <circle class="inner" cx="0" cy="0" r="7" fill="#3b82f6" stroke="rgba(255,255,255,.4)" stroke-width="1.5"/>
+              <text x="0" y="4" text-anchor="middle" font-size="8" fill="white" font-weight="700">🚐</text>
+              <g transform="translate(0,-20)">
+                <rect x="-22" y="-11" width="44" height="14" rx="4" fill="#0d0f14" opacity=".85"/>
+                <text x="0" y="0" text-anchor="middle" font-size="9" fill="#3b82f6" font-family="monospace" font-weight="600">GHI-9012</text>
+              </g>
+              <g transform="translate(0,20)">
+                <rect x="-14" y="-8" width="28" height="12" rx="3" fill="#3b82f6" opacity=".9"/>
+                <text x="0" y="2" text-anchor="middle" font-size="9" fill="white" font-family="monospace">48km/h</text>
+              </g>
+            </g>
+
+            <!-- JKL-3456 Offline cinza -->
+            <g id="pin-3" class="mpin" onclick="itrSelectVeh(3)" transform="translate(80,370)">
+              <circle cx="0" cy="0" r="10" fill="#6b7280" opacity=".2"/>
+              <circle class="inner" cx="0" cy="0" r="7" fill="#6b7280" stroke="rgba(255,255,255,.3)" stroke-width="1.5"/>
+              <text x="0" y="4" text-anchor="middle" font-size="8" fill="white" font-weight="700">🔇</text>
+              <g transform="translate(0,-20)">
+                <rect x="-22" y="-11" width="44" height="14" rx="4" fill="#0d0f14" opacity=".85"/>
+                <text x="0" y="0" text-anchor="middle" font-size="9" fill="#9ca3af" font-family="monospace" font-weight="600">JKL-3456</text>
+              </g>
+              <g transform="translate(0,20)">
+                <rect x="-16" y="-8" width="32" height="12" rx="3" fill="#374151" opacity=".9"/>
+                <text x="0" y="2" text-anchor="middle" font-size="9" fill="#9ca3af" font-family="monospace">OFFLINE</text>
+              </g>
+            </g>
+
+            <!-- MNO-7890 Em rota lilás -->
+            <g id="pin-4" class="mpin" onclick="itrSelectVeh(4)" transform="translate(610,370)">
+              <circle class="pulse" cx="0" cy="0" r="8" fill="#8b5cf6" opacity="0"/>
+              <circle cx="0" cy="0" r="10" fill="#8b5cf6" opacity=".2"/>
+              <circle class="inner" cx="0" cy="0" r="7" fill="#8b5cf6" stroke="rgba(255,255,255,.4)" stroke-width="1.5"/>
+              <text x="0" y="4" text-anchor="middle" font-size="8" fill="white" font-weight="700">🚛</text>
+              <g transform="translate(0,-20)">
+                <rect x="-22" y="-11" width="44" height="14" rx="4" fill="#0d0f14" opacity=".85"/>
+                <text x="0" y="0" text-anchor="middle" font-size="9" fill="#a78bfa" font-family="monospace" font-weight="600">MNO-7890</text>
+              </g>
+              <g transform="translate(0,20)">
+                <rect x="-14" y="-8" width="28" height="12" rx="3" fill="#8b5cf6" opacity=".9"/>
+                <text x="0" y="2" text-anchor="middle" font-size="9" fill="white" font-family="monospace">35km/h</text>
+              </g>
+            </g>
+          </svg>
+
+          <!-- Painel de detalhe do veículo (bottom sheet) -->
+          <div class="veh-detail-panel" id="vehDetailPanel">
+            <div class="vdp-header">
+              <div>
+                <div class="vdp-plate" id="vdpPlate">—</div>
+                <div style="font-size:11px;color:var(--muted);margin-top:2px" id="vdpModel">—</div>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center">
+                <span class="tag" id="vdpStatusTag">—</span>
+                <button class="vdp-close" onclick="itrCloseDetail()">✕</button>
+              </div>
+            </div>
+            <div class="vdp-grid">
+              <div class="vdp-stat">
+                <div class="vdp-val" id="vdpSpeed">—</div>
+                <div class="vdp-lbl">Velocidade</div>
+              </div>
+              <div class="vdp-stat">
+                <div class="vdp-val" id="vdpKm">—</div>
+                <div class="vdp-lbl">Km hoje</div>
+              </div>
+              <div class="vdp-stat">
+                <div class="vdp-val" id="vdpBat">—</div>
+                <div class="vdp-lbl">Bateria</div>
+              </div>
+            </div>
+            <div class="vdp-info">
+              <div class="vdp-field">
+                <div class="vdp-field-lbl">Motorista</div>
+                <div class="vdp-field-val" id="vdpDriver">—</div>
+              </div>
+              <div class="vdp-field">
+                <div class="vdp-field-lbl">Localização</div>
+                <div class="vdp-field-val" id="vdpLoc">—</div>
+              </div>
+              <div class="vdp-field">
+                <div class="vdp-field-lbl">Última atualização</div>
+                <div class="vdp-field-val" id="vdpTime">—</div>
+              </div>
+              <div class="vdp-field">
+                <div class="vdp-field-lbl">Ignição</div>
+                <div class="vdp-field-val" id="vdpIgn">—</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PAINEL LATERAL DIREITO -->
+        <div class="itr-side">
+          <!-- filtros -->
+          <div class="map-filters">
+            <button class="mf-btn f-all active" id="mf-all"  onclick="itrFilter('all')">Todos (5)</button>
+            <button class="mf-btn f-on"        id="mf-on"   onclick="itrFilter('on')">Rota (3)</button>
+            <button class="mf-btn f-warn"      id="mf-warn" onclick="itrFilter('warn')">Parado (1)</button>
+            <button class="mf-btn f-off"       id="mf-off"  onclick="itrFilter('off')">Offline (1)</button>
+          </div>
+          <!-- header -->
+          <div class="itr-side-header">
+            <div class="itr-side-title">Frota em tempo real</div>
+            <div class="itr-side-count" id="itrSideCount">5 veículos · 3 em rota</div>
+          </div>
+          <!-- lista -->
+          <div class="veh-list" id="vehListPanel">
+            <!-- gerado por JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Gráficos de tendência ITR -->
+      <div class="tab-charts-2">
+        <div class="chart-panel">
+          <div class="cp-head"><span class="cp-title">Km percorridos — últimos 7 dias</span><span class="cp-badge" style="background:rgba(249,115,22,.15);color:var(--amber)">42.8k / mês</span></div>
+          <div class="cp-body"><canvas id="chartITRkm"></canvas></div>
+        </div>
+        <div class="chart-panel">
+          <div class="cp-head"><span class="cp-title">Status da frota (distribuição)</span><span class="cp-badge" style="background:rgba(16,185,129,.15);color:var(--green)">31 veículos</span></div>
+          <div class="cp-body"><canvas id="chartITRdist"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Tabela de veículos -->
+      <div class="card">
+        <div class="card-body" style="padding:0">
+          <table class="tbl" id="tblITRveh">
+            <thead><tr><th>Placa</th><th>Modelo</th><th>Motorista</th><th>Localização</th><th>Velocidade</th><th>Ignição</th><th>Status</th><th></th></tr></thead>
+            <tbody id="itrTableBody">
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div style="margin-top:10px;display:flex;justify-content:flex-end">
+        <a class="lnk" href="https://www.ituran.com.br" target="_blank">Abrir portal Ituran ↗</a>
+      </div>
+    </div>
+div>
+          <div class="tc-label">Parados</div><div class="tc-value">04</div>
+          <div class="tc-delta down">1 fora de área</div>
+          <div class="tc-canvas"><canvas id="spkITR2"></canvas></div>
+        </div>
+        <div class="tc"><div class="tc-accent" style="background:var(--accent)"></div>
+          <div class="tc-label">Km Hoje</div><div class="tc-value">1.284</div>
+          <div class="tc-delta up">↑ 12% vs média</div>
+          <div class="tc-canvas"><canvas id="spkITR3"></canvas></div>
+        </div>
+        <div class="tc"><div class="tc-accent" style="background:var(--red)"></div>
+          <div class="tc-label">Offline</div><div class="tc-value">02</div>
+          <div class="tc-delta down">1 sem bateria</div>
+          <div class="tc-canvas"><canvas id="spkITR4"></canvas></div>
+        </div>
+      </div>
+      <!-- Gráficos de tendência ITR -->
+      <div class="tab-charts-2">
+        <div class="chart-panel">
+          <div class="cp-head"><span class="cp-title">Km percorridos — últimos 7 dias</span><span class="cp-badge" style="background:rgba(249,115,22,.15);color:var(--amber)">42.8k / mês</span></div>
+          <div class="cp-body"><canvas id="chartITRkm"></canvas></div>
+        </div>
+        <div class="chart-panel">
+          <div class="cp-head"><span class="cp-title">Status da frota (distribuição)</span><span class="cp-badge" style="background:rgba(16,185,129,.15);color:var(--green)">31 veículos</span></div>
+          <div class="cp-body"><canvas id="chartITRdist"></canvas></div>
+        </div>
+      </div>
+      <!-- Stats de frota -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
+        <div class="hcm-stat"><div class="hcm-val" style="color:var(--green)">24</div><div class="hcm-lbl">Em rota</div></div>
+        <div class="hcm-stat"><div class="hcm-val" style="color:var(--amber)">04</div><div class="hcm-lbl">Parados</div></div>
+        <div class="hcm-stat"><div class="hcm-val" style="color:var(--muted2)">02</div><div class="hcm-lbl">Offline</div></div>
+        <div class="hcm-stat"><div class="hcm-val" style="color:var(--accent)">01</div><div class="hcm-lbl">Manutenção</div></div>
+      </div>
+      <!-- Lista de veículos -->
+      <div class="card">
+        <div class="card-body" style="padding:0">
+          <table class="tbl">
+            <thead><tr><th>Placa</th><th>Modelo</th><th>Motorista</th><th>Localização</th><th>Velocidade</th><th>Ignição</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              <tr><td><span class="veh-plate">ABC-1234</span></td><td class="bold">Fiat Fiorino</td><td>João Mendes</td><td style="font-size:11px;color:var(--muted)">Av. Paulista, SP</td><td style="font-family:var(--mono);font-size:12px">62 km/h</td><td><span class="tag ok">Ligada</span></td><td><span style="display:flex;align-items:center;gap:5px"><div class="sdot on"></div><span style="font-size:11px">Em rota</span></span></td><td><button class="btn sm" onclick="showToast('Rastreando ABC-1234...','info')">Rastrear</button></td></tr>
+              <tr><td><span class="veh-plate">DEF-5678</span></td><td class="bold">VW Gol</td><td>Carlos Ramos</td><td style="font-size:11px;color:var(--muted)">R. Augusta, SP</td><td style="font-family:var(--mono);font-size:12px">0 km/h</td><td><span class="tag ok">Ligada</span></td><td><span style="display:flex;align-items:center;gap:5px"><div class="sdot warn"></div><span style="font-size:11px">Parado</span></span></td><td><button class="btn sm" onclick="showToast('Rastreando DEF-5678...','info')">Rastrear</button></td></tr>
+              <tr><td><span class="veh-plate">GHI-9012</span></td><td class="bold">Ford Transit</td><td>Fábio Torres</td><td style="font-size:11px;color:var(--muted)">Via Anchieta</td><td style="font-family:var(--mono);font-size:12px">48 km/h</td><td><span class="tag ok">Ligada</span></td><td><span style="display:flex;align-items:center;gap:5px"><div class="sdot on"></div><span style="font-size:11px">Em rota</span></span></td><td><button class="btn sm" onclick="showToast('Rastreando GHI-9012...','info')">Rastrear</button></td></tr>
+              <tr><td><span class="veh-plate">JKL-3456</span></td><td class="bold">Chevrolet S10</td><td>—</td><td style="font-size:11px;color:var(--muted)">Guarulhos, SP</td><td style="font-family:var(--mono);font-size:12px">—</td><td><span class="tag err">Desligada</span></td><td><span style="display:flex;align-items:center;gap:5px"><div class="sdot off"></div><span style="font-size:11px;color:var(--muted)">Offline</span></span></td><td><button class="btn sm" onclick="showToast('Rastreando JKL-3456...','info')">Rastrear</button></td></tr>
+              <tr><td><span class="veh-plate">MNO-7890</span></td><td class="bold">Renault Master</td><td>Ana Lima</td><td style="font-size:11px;color:var(--muted)">Av. Brasil, SP</td><td style="font-family:var(--mono);font-size:12px">35 km/h</td><td><span class="tag ok">Ligada</span></td><td><span style="display:flex;align-items:center;gap:5px"><div class="sdot on"></div><span style="font-size:11px">Em rota</span></span></td><td><button class="btn sm" onclick="showToast('Rastreando MNO-7890...','info')">Rastrear</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div style="margin-top:10px;display:flex;justify-content:flex-end">
+        <a class="lnk" href="https://www.ituran.com.br" target="_blank">Abrir portal Ituran ↗</a>
+      </div>
+    </div>
+
+    <!-- ABA: PORTO SEGURO -->
+    <div id="apicontent-psg" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="int-logo psg">PS</div>
+          <div>
+            <div style="font-size:13px;font-weight:500">Porto Seguro</div>
+            <div style="font-size:11px;color:var(--muted)">Gestão de seguros e sinistros</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="btn sm" onclick="navTo('sinistros')">Ver todos →</button>
+          <button class="btn primary sm" onclick="openModal('modalSin')">+ Sinistro</button>
+        </div>
+      </div>
+
+      <!-- 1. MINI CHARTS PORTO SEGURO -->
+      <div class="tab-charts">
+        <div class="tc"><div class="tc-accent" style="background:var(--red)"></div>
+          <div class="tc-label">Sinistros Ativos</div><div class="tc-value">03</div>
+          <div class="tc-delta down">1 urgente</div>
+          <div class="tc-canvas"><canvas id="spkPSG1"></canvas></div>
+        </div>
+        <div class="tc"><div class="tc-accent" style="background:var(--amber)"></div>
+          <div class="tc-label">Em Análise</div><div class="tc-value">02</div>
+          <div class="tc-delta neu">Aguard. Porto</div>
+          <div class="tc-canvas"><canvas id="spkPSG2"></canvas></div>
+        </div>
+        <div class="tc"><div class="tc-accent" style="background:var(--green)"></div>
+          <div class="tc-label">Aprovados (mês)</div><div class="tc-value">04</div>
+          <div class="tc-delta up">↑ 2 vs anterior</div>
+          <div class="tc-canvas"><canvas id="spkPSG3"></canvas></div>
+        </div>
+        <div class="tc"><div class="tc-accent" style="background:var(--purple)"></div>
+          <div class="tc-label">Custo Acumulado</div><div class="tc-value">R$28k</div>
+          <div class="tc-delta down">↑ R$8k vs abr</div>
+          <div class="tc-canvas"><canvas id="spkPSG4"></canvas></div>
+        </div>
+      </div>
+      <!-- Gráficos de tendência PSG -->
+      <div class="tab-charts-2">
+        <div class="chart-panel">
+          <div class="cp-head"><span class="cp-title">Custo de sinistros — últimos 5 meses</span><span class="cp-badge" style="background:rgba(139,92,246,.15);color:var(--purple)">R$28k mai</span></div>
+          <div class="cp-body"><canvas id="chartPSGcusto"></canvas></div>
+        </div>
+        <div class="chart-panel">
+          <div class="cp-head"><span class="cp-title">Sinistros por status</span><span class="cp-badge" style="background:rgba(239,68,68,.15);color:var(--red)">3 abertos</span></div>
+          <div class="cp-body"><canvas id="chartPSGstatus"></canvas></div>
+        </div>
+      </div>
+      <!-- KPIs sinistros -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
+        <div class="hcm-stat"><div class="hcm-val" style="color:var(--red)">03</div><div class="hcm-lbl">Ativos</div></div>
+        <div class="hcm-stat"><div class="hcm-val" style="color:var(--amber)">02</div><div class="hcm-lbl">Em análise</div></div>
+        <div class="hcm-stat"><div class="hcm-val" style="color:var(--green)">04</div><div class="hcm-lbl">Aprovados (mês)</div></div>
+        <div class="hcm-stat"><div class="hcm-val" style="color:var(--muted2)">R$ 28k</div><div class="hcm-lbl">Custo acumulado</div></div>
+      </div>
+      <!-- Sinistros -->
+      <div class="card">
+        <div class="card-body" style="padding:0">
+          <table class="tbl">
+            <thead><tr><th>Protocolo</th><th>Tipo</th><th>Veículo</th><th>Local</th><th>Data</th><th>Responsável</th><th>Estimativa</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              <tr><td style="font-family:var(--mono);font-size:10px">#SIN-2025-0892</td><td>Colisão traseira</td><td class="bold">ABC-1234</td><td style="font-size:11px;color:var(--muted)">Av. Paulista, SP</td><td style="font-size:11px">12/05/2025</td><td>João M.</td><td style="font-family:var(--mono);font-size:12px">R$ 4.200</td><td><span class="tag err">Urgente</span></td><td><button class="btn sm" onclick="showToast('Abrindo protocolo no portal Porto Seguro...','info')">Abrir</button></td></tr>
+              <tr><td style="font-family:var(--mono);font-size:10px">#SIN-2025-0880</td><td>Furto equipamento</td><td class="bold">DEF-5678</td><td style="font-size:11px;color:var(--muted)">Guarulhos, SP</td><td style="font-size:11px">05/05/2025</td><td>Ana L.</td><td style="font-family:var(--mono);font-size:12px">R$ 8.500</td><td><span class="tag pend">Em análise</span></td><td><button class="btn sm" onclick="showToast('Abrindo protocolo no portal Porto Seguro...','info')">Abrir</button></td></tr>
+              <tr><td style="font-family:var(--mono);font-size:10px">#SIN-2025-0871</td><td>Dano de vidro</td><td class="bold">GHI-9012</td><td style="font-size:11px;color:var(--muted)">Santo André, SP</td><td style="font-size:11px">28/04/2025</td><td>Pedro S.</td><td style="font-family:var(--mono);font-size:12px">R$ 450</td><td><span class="tag ok">Aprovado</span></td><td><button class="btn sm" onclick="showToast('Abrindo protocolo no portal Porto Seguro...','info')">Abrir</button></td></tr>
+              <tr><td style="font-family:var(--mono);font-size:10px">#SIN-2025-0860</td><td>Arranhão lateral</td><td class="bold">MNO-7890</td><td style="font-size:11px;color:var(--muted)">Campinas, SP</td><td style="font-size:11px">18/04/2025</td><td>Fábio T.</td><td style="font-family:var(--mono);font-size:12px">R$ 1.200</td><td><span class="tag ok">Encerrado</span></td><td><button class="btn sm" onclick="showToast('Abrindo protocolo no portal Porto Seguro...','info')">Abrir</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div style="margin-top:10px;display:flex;justify-content:flex-end">
+        <a class="lnk" href="https://www.portoseguro.com.br" target="_blank">Abrir portal Porto Seguro ↗</a>
+      </div>
+    </div>
+
+    <!-- ABA: HCM TEKNISA -->
+    <div id="apicontent-hcm" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="int-logo hcm">HCM</div>
+          <div>
+            <div style="font-size:13px;font-weight:500">HCM Teknisa</div>
+            <div style="font-size:11px;color:var(--muted)">Gestão de capital humano · Turno atual</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="btn sm" onclick="navTo('colaboradores')">Ver RH completo →</button>
+          <button class="btn primary sm" onclick="openModal('modalColab')">+ Colaborador</button>
+        </div>
+      </div>
+
+      <!-- 1. MINI CHARTS HCM -->
+      <div class="tab-charts">
+        <div class="tc"><div class="tc-accent" style="background:var(--green)"></div>
+          <div class="tc-label">Ativos Hoje</div><div class="tc-value">148</div>
+          <div class="tc-delta neu">de 162 cadastrados</div>
+          <div class="tc-canvas"><canvas id="spkHCM1"></canvas></div>
+        </div>
+        <div class="tc"><div class="tc-accent" style="background:var(--red)"></div>
+          <div class="tc-label">Ausências</div><div class="tc-value">06</div>
+          <div class="tc-delta down">↑ 2 vs ontem</div>
+          <div class="tc-canvas"><canvas id="spkHCM2"></canvas></div>
+        </div>
+        <div class="tc"><div class="tc-accent" style="background:var(--purple)"></div>
+          <div class="tc-label">Horas Extras</div><div class="tc-value">12</div>
+          <div class="tc-delta down">Total: 48h hoje</div>
+          <div class="tc-canvas"><canvas id="spkHCM3"></canvas></div>
+        </div>
+        <div class="tc"><div class="tc-accent" style="background:var(--accent)"></div>
+          <div class="tc-label">Férias/Afastados</div><div class="tc-value">10</div>
+          <div class="tc-delta neu">8 férias · 2 afas.</div>
+          <div class="tc-canvas"><canvas id="spkHCM4"></canvas></div>
+        </div>
+      </div>
+      <!-- Gráficos de tendência HCM -->
+      <div class="tab-charts-2">
+        <div class="chart-panel">
+          <div class="cp-head"><span class="cp-title">Presença — últimos 7 dias</span><span class="cp-badge" style="background:rgba(16,185,129,.15);color:var(--green)">91.4% taxa</span></div>
+          <div class="cp-body"><canvas id="chartHCMpres"></canvas></div>
+        </div>
+        <div class="chart-panel">
+          <div class="cp-head"><span class="cp-title">Distribuição por status</span><span class="cp-badge" style="background:rgba(139,92,246,.15);color:var(--purple)">162 total</span></div>
+          <div class="cp-body"><canvas id="chartHCMdist"></canvas></div>
+        </div>
+      </div>
+      <!-- KPIs HCM -->
+      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px">
+        <div class="hcm-stat"><div class="hcm-val" style="color:var(--green)">148</div><div class="hcm-lbl">Ativos</div></div>
+        <div class="hcm-stat"><div class="hcm-val" style="color:var(--red)">06</div><div class="hcm-lbl">Ausentes</div></div>
+        <div class="hcm-stat"><div class="hcm-val" style="color:var(--accent)">08</div><div class="hcm-lbl">Férias</div></div>
+        <div class="hcm-stat"><div class="hcm-val" style="color:var(--amber)">02</div><div class="hcm-lbl">Afastados</div></div>
+        <div class="hcm-stat"><div class="hcm-val" style="color:var(--purple)">12</div><div class="hcm-lbl">Hora Extra</div></div>
+        <div class="hcm-stat"><div class="hcm-val" style="color:var(--muted2)">162</div><div class="hcm-lbl">Total</div></div>
+      </div>
+      <!-- Tabela colaboradores -->
+      <div class="card">
+        <div class="card-body" style="padding:0">
+          <table class="tbl">
+            <thead><tr><th>Nome</th><th>Matrícula</th><th>Cargo</th><th>Setor</th><th>Entrada</th><th>Saída Prev.</th><th>H. Extras</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              <tr><td class="bold">João Mendes</td><td style="font-family:var(--mono);font-size:10px">00412</td><td>Operador</td><td>Operacional</td><td style="font-family:var(--mono);font-size:11px">07:02</td><td style="font-family:var(--mono);font-size:11px">16:02</td><td style="font-family:var(--mono);font-size:11px;color:var(--amber)">01:20</td><td><span class="tag ok">Ativo</span></td><td><button class="btn sm" onclick="showToast('Abrindo perfil no HCM Teknisa...','info')">Perfil</button></td></tr>
+              <tr><td class="bold">Ana Lima</td><td style="font-family:var(--mono);font-size:10px">00318</td><td>Supervisora</td><td>Operacional</td><td style="font-family:var(--mono);font-size:11px">06:58</td><td style="font-family:var(--mono);font-size:11px">15:58</td><td style="font-family:var(--mono);font-size:11px">00:00</td><td><span class="tag ok">Ativo</span></td><td><button class="btn sm" onclick="showToast('Abrindo perfil no HCM Teknisa...','info')">Perfil</button></td></tr>
+              <tr><td class="bold">Pedro Santos</td><td style="font-family:var(--mono);font-size:10px">00290</td><td>Motorista</td><td>Logística</td><td style="font-family:var(--mono);font-size:11px">—</td><td style="font-family:var(--mono);font-size:11px">—</td><td style="font-family:var(--mono);font-size:11px">—</td><td><span class="tag info">Férias</span></td><td><button class="btn sm" onclick="showToast('Abrindo perfil no HCM Teknisa...','info')">Perfil</button></td></tr>
+              <tr><td class="bold">Carlos Ramos</td><td style="font-family:var(--mono);font-size:10px">00445</td><td>Porteiro</td><td>Segurança</td><td style="font-family:var(--mono);font-size:11px">—</td><td style="font-family:var(--mono);font-size:11px">—</td><td style="font-family:var(--mono);font-size:11px">—</td><td><span class="tag err">Ausente</span></td><td><button class="btn sm" onclick="showToast('Abrindo perfil no HCM Teknisa...','info')">Perfil</button></td></tr>
+              <tr><td class="bold">Fábio Torres</td><td style="font-family:var(--mono);font-size:10px">00381</td><td>Téc. Manutenção</td><td>Operacional</td><td style="font-family:var(--mono);font-size:11px">07:15</td><td style="font-family:var(--mono);font-size:11px">16:15</td><td style="font-family:var(--mono);font-size:11px;color:var(--amber)">02:45</td><td><span class="tag ok">Ativo</span></td><td><button class="btn sm" onclick="showToast('Abrindo perfil no HCM Teknisa...','info')">Perfil</button></td></tr>
+              <tr><td class="bold">Maria Fonseca</td><td style="font-family:var(--mono);font-size:10px">00502</td><td>Aux. Limpeza</td><td>Operacional</td><td style="font-family:var(--mono);font-size:11px">05:45</td><td style="font-family:var(--mono);font-size:11px">14:45</td><td style="font-family:var(--mono);font-size:11px;color:var(--amber)">00:30</td><td><span class="tag ok">Ativo</span></td><td><button class="btn sm" onclick="showToast('Abrindo perfil no HCM Teknisa...','info')">Perfil</button></td></tr>
+              <tr><td class="bold">Rita Costa</td><td style="font-family:var(--mono);font-size:10px">00367</td><td>Analista Adm.</td><td>Administrativo</td><td style="font-family:var(--mono);font-size:11px">08:01</td><td style="font-family:var(--mono);font-size:11px">17:01</td><td style="font-family:var(--mono);font-size:11px">00:00</td><td><span class="tag ok">Ativo</span></td><td><button class="btn sm" onclick="showToast('Abrindo perfil no HCM Teknisa...','info')">Perfil</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div style="margin-top:10px;display:flex;justify-content:flex-end">
+        <a class="lnk" href="https://www.teknisa.com" target="_blank">Abrir HCM Teknisa ↗</a>
+      </div>
+    </div>
+
+    <!-- ABA: FEED DE ATIVIDADES -->
+    <div id="apicontent-feed" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div style="font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px">
+          <span class="dot-live" style="background:var(--green)"></span>
+          Feed de Atividades — Tempo real
+        </div>
+        <div style="display:flex;gap:6px;font-size:11px">
+          <span class="as-clf" style="padding:3px 9px;border-radius:8px;cursor:pointer" onclick="filterFeed('CLF')">CLF</span>
+          <span class="as-itr" style="padding:3px 9px;border-radius:8px;cursor:pointer" onclick="filterFeed('Ituran')">Ituran</span>
+          <span class="as-psg" style="padding:3px 9px;border-radius:8px;cursor:pointer" onclick="filterFeed('Porto')">Porto</span>
+          <span class="as-hcm" style="padding:3px 9px;border-radius:8px;cursor:pointer" onclick="filterFeed('HCM')">HCM</span>
+          <span class="as-sys" style="padding:3px 9px;border-radius:8px;cursor:pointer" onclick="filterFeed('')">Todos</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body" style="max-height:480px;overflow-y:auto;padding:8px 16px">
+          <div id="feedDash">
+            <div class="act-item"><div class="act-time">08:47</div><div class="act-dot" style="background:var(--green)"></div><div class="act-content"><div class="act-title">Check List "Limpeza Geral" finalizado com 100%</div><div class="act-src"><span class="as-clf">CLF</span>Maria F.</div></div></div>
+            <div class="act-item"><div class="act-time">08:42</div><div class="act-dot" style="background:var(--accent)"></div><div class="act-content"><div class="act-title">Check List "Frota Veicular" concluído</div><div class="act-src"><span class="as-clf">CLF</span>João M.</div></div></div>
+            <div class="act-item"><div class="act-time">08:31</div><div class="act-dot" style="background:var(--amber)"></div><div class="act-content"><div class="act-title">Alerta: DEF-5678 parado fora de rota há 22 min</div><div class="act-src"><span class="as-itr">Ituran</span>Automático</div></div></div>
+            <div class="act-item"><div class="act-time">08:15</div><div class="act-dot" style="background:var(--red)"></div><div class="act-content"><div class="act-title">Sinistro #0892 registrado — urgente</div><div class="act-src"><span class="as-psg">Porto Seguro</span></div></div></div>
+            <div class="act-item"><div class="act-time">07:58</div><div class="act-dot" style="background:var(--green)"></div><div class="act-content"><div class="act-title">Ponto batido — 148 colaboradores ativos</div><div class="act-src"><span class="as-hcm">HCM</span>Turno manhã</div></div></div>
+            <div class="act-item"><div class="act-time">07:44</div><div class="act-dot" style="background:var(--muted)"></div><div class="act-content"><div class="act-title">Check "EPI Turno A" iniciado</div><div class="act-src"><span class="as-clf">CLF</span>Ana L.</div></div></div>
+            <div class="act-item"><div class="act-time">07:30</div><div class="act-dot" style="background:var(--accent)"></div><div class="act-content"><div class="act-title">Todos os sistemas integrados inicializados</div><div class="act-src"><span class="as-sys">Sistema</span></div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /conteúdo das abas -->
+
+</div><!-- /page-dashboard -->
+
+<!-- ===== (REMOVIDOS OS ANTIGOS ROW1, ROW2, ROW3 — substituídos pelas abas acima) ===== -->
+
+<!-- ===== GHOST para manter compatibilidade com código JS que usa tblCLF etc ===== -->
+<table style="display:none"><tbody id="tbl-compat"></tbody></table>
+<!-- ===== PAGE: CHECKLIST ===== -->
+<div class="page" id="page-checklist">
+  <div class="page-header">
+    <div><div class="page-title"><span style="margin-right:8px">✅</span>Check List Fácil</div><div class="page-sub">Gestão de checklists operacionais</div></div>
+    <div class="actions">
+      <a class="btn" href="https://checklistfacil.com.br" target="_blank">Abrir sistema ↗</a>
+      <button class="btn primary" onclick="openModal('modalChk')">+ Novo Check List</button>
+    </div>
+  </div>
+
+  <div class="filter-bar mb">
+    <div class="search-box"><span>🔍</span><input type="text" placeholder="Buscar checklist..." oninput="filterTable('tblCLF',this.value)"></div>
+    <select class="filter-select"><option>Todos os status</option><option>Concluído</option><option>Em andamento</option><option>Atrasado</option><option>Com falha</option></select>
+    <select class="filter-select"><option>Todos responsáveis</option><option>João M.</option><option>Ana L.</option><option>Pedro S.</option></select>
+    <button class="btn sm" onclick="showToast('Exportado para Excel','success')">⬇ Exportar</button>
+  </div>
+
+  <div class="card mb2">
+    <div class="card-body" style="padding:0">
+      <table class="tbl" id="tblCLF">
+        <thead><tr><th>#</th><th>Checklist</th><th>Responsável</th><th>Prazo</th><th>Progresso</th><th>Status</th><th>Ação</th></tr></thead>
+        <tbody>
+          <tr><td style="font-family:var(--mono);font-size:10px;color:var(--muted)">CLF-001</td><td class="bold">Inspeção de Frota — Manhã</td><td>João Mendes</td><td>08:00</td><td><div style="display:flex;align-items:center;gap:8px"><div class="prog-bar" style="width:70px"><div class="prog-fill" style="width:100%;background:var(--green)"></div></div><span style="font-size:10px;font-family:var(--mono)">10/10</span></div></td><td><span class="tag ok">Concluído</span></td><td><button class="btn sm" onclick="openChkDetail('CLF-001')">Ver</button></td></tr>
+          <tr><td style="font-family:var(--mono);font-size:10px;color:var(--muted)">CLF-002</td><td class="bold">Controle de EPI — Turno A</td><td>Ana Lima</td><td>09:00</td><td><div style="display:flex;align-items:center;gap:8px"><div class="prog-bar" style="width:70px"><div class="prog-fill" style="width:75%;background:var(--accent)"></div></div><span style="font-size:10px;font-family:var(--mono)">9/12</span></div></td><td><span class="tag info">Em andamento</span></td><td><button class="btn sm" onclick="openChkDetail('CLF-002')">Ver</button></td></tr>
+          <tr><td style="font-family:var(--mono);font-size:10px;color:var(--muted)">CLF-003</td><td class="bold">Segurança do Trabalho</td><td>Pedro Santos</td><td>08:30</td><td><div style="display:flex;align-items:center;gap:8px"><div class="prog-bar" style="width:70px"><div class="prog-fill" style="width:45%;background:var(--amber)"></div></div><span style="font-size:10px;font-family:var(--mono)">5/11</span></div></td><td><span class="tag pend">Atrasado</span></td><td><button class="btn sm" onclick="openChkDetail('CLF-003')">Ver</button></td></tr>
+          <tr><td style="font-family:var(--mono);font-size:10px;color:var(--muted)">CLF-004</td><td class="bold">Controle de Acesso — Portaria</td><td>Rita Costa</td><td>07:00</td><td><div style="display:flex;align-items:center;gap:8px"><div class="prog-bar" style="width:70px"><div class="prog-fill" style="width:30%;background:var(--red)"></div></div><span style="font-size:10px;font-family:var(--mono)">3/10</span></div></td><td><span class="tag err">Com falha</span></td><td><button class="btn sm" onclick="openChkDetail('CLF-004')">Ver</button></td></tr>
+          <tr><td style="font-family:var(--mono);font-size:10px;color:var(--muted)">CLF-005</td><td class="bold">Limpeza e Conservação</td><td>Maria Fonseca</td><td>07:30</td><td><div style="display:flex;align-items:center;gap:8px"><div class="prog-bar" style="width:70px"><div class="prog-fill" style="width:100%;background:var(--green)"></div></div><span style="font-size:10px;font-family:var(--mono)">8/8</span></div></td><td><span class="tag ok">Concluído</span></td><td><button class="btn sm" onclick="openChkDetail('CLF-005')">Ver</button></td></tr>
+          <tr><td style="font-family:var(--mono);font-size:10px;color:var(--muted)">CLF-006</td><td class="bold">Manutenção Preventiva</td><td>Fábio Torres</td><td>10:00</td><td><div style="display:flex;align-items:center;gap:8px"><div class="prog-bar" style="width:70px"><div class="prog-fill" style="width:0%;background:var(--muted)"></div></div><span style="font-size:10px;font-family:var(--mono)">0/15</span></div></td><td><span class="tag pend">Não iniciado</span></td><td><button class="btn sm" onclick="openChkDetail('CLF-006')">Ver</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+            <tr><td class="bold">João Mendes</td><td>Operador</td><td style="font-family:var(--mono);font-size:11px">07:02</td><td><span class="tag ok">Ativo</span></td></tr>
+            <tr><td class="bold">Ana Lima</td><td>Supervisora</td><td style="font-family:var(--mono);font-size:11px">06:58</td><td><span class="tag ok">Ativo</span></td></tr>
+            <tr><td class="bold">Pedro Santos</td><td>Motorista</td><td style="font-family:var(--mono);font-size:11px">—</td><td><span class="tag info">Férias</span></td></tr>
+            <tr><td class="bold">Carlos Ramos</td><td>Porteiro</td><td style="font-family:var(--mono);font-size:11px">—</td><td><span class="tag err">Ausente</span></td></tr>
+            <tr><td class="bold">Fábio Torres</td><td>Técnico</td><td style="font-family:var(--mono);font-size:11px">07:15</td><td><span class="tag ok">Ativo</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /page-dashboard -->
+
+<!-- ===== PAGE: CHECKLIST ===== -->
+<div class="page" id="page-checklist">
+  <div class="page-header">
+    <div><div class="page-title"><span style="margin-right:8px">✅</span>Check List Fácil</div><div class="page-sub">Gestão de checklists operacionais</div></div>
+    <div class="actions">
+      <a class="btn" href="https://checklistfacil.com.br" target="_blank">Abrir sistema ↗</a>
+      <button class="btn primary" onclick="openModal('modalChk')">+ Novo Check List</button>
+    </div>
+  </div>
+
+  <div class="filter-bar mb">
+    <div class="search-box"><span>🔍</span><input type="text" placeholder="Buscar checklist..." oninput="filterTable('tblCLF',this.value)"></div>
+    <select class="filter-select"><option>Todos os status</option><option>Concluído</option><option>Em andamento</option><option>Atrasado</option><option>Com falha</option></select>
+    <select class="filter-select"><option>Todos responsáveis</option><option>João M.</option><option>Ana L.</option><option>Pedro S.</option></select>
+    <button class="btn sm" onclick="showToast('Exportado para Excel','success')">⬇ Exportar</button>
+  </div>
+
+  <div class="card mb2">
+    <div class="card-body" style="padding:0">
+      <table class="tbl" id="tblCLF">
+        <thead><tr><th>#</th><th>Checklist</th><th>Responsável</th><th>Prazo</th><th>Progresso</th><th>Status</th><th>Ação</th></tr></thead>
+        <tbody>
+          <tr><td style="font-family:var(--mono);font-size:10px;color:var(--muted)">CLF-001</td><td class="bold">Inspeção de Frota — Manhã</td><td>João Mendes</td><td>08:00</td><td><div style="display:flex;align-items:center;gap:8px"><div class="prog-bar" style="width:70px"><div class="prog-fill" style="width:100%;background:var(--green)"></div></div><span style="font-size:10px;font-family:var(--mono)">10/10</span></div></td><td><span class="tag ok">Concluído</span></td><td><button class="btn sm" onclick="openChkDetail('CLF-001')">Ver</button></td></tr>
+          <tr><td style="font-family:var(--mono);font-size:10px;color:var(--muted)">CLF-002</td><td class="bold">Controle de EPI — Turno A</td><td>Ana Lima</td><td>09:00</td><td><div style="display:flex;align-items:center;gap:8px"><div class="prog-bar" style="width:70px"><div class="prog-fill" style="width:75%;background:var(--accent)"></div></div><span style="font-size:10px;font-family:var(--mono)">9/12</span></div></td><td><span class="tag info">Em andamento</span></td><td><button class="btn sm" onclick="openChkDetail('CLF-002')">Ver</button></td></tr>
+          <tr><td style="font-family:var(--mono);font-size:10px;color:var(--muted)">CLF-003</td><td class="bold">Segurança do Trabalho</td><td>Pedro Santos</td><td>08:30</td><td><div style="display:flex;align-items:center;gap:8px"><div class="prog-bar" style="width:70px"><div class="prog-fill" style="width:45%;background:var(--amber)"></div></div><span style="font-size:10px;font-family:var(--mono)">5/11</span></div></td><td><span class="tag pend">Atrasado</span></td><td><button class="btn sm" onclick="openChkDetail('CLF-003')">Ver</button></td></tr>
+          <tr><td style="font-family:var(--mono);font-size:10px;color:var(--muted)">CLF-004</td><td class="bold">Controle de Acesso — Portaria</td><td>Rita Costa</td><td>07:00</td><td><div style="display:flex;align-items:center;gap:8px"><div class="prog-bar" style="width:70px"><div class="prog-fill" style="width:30%;background:var(--red)"></div></div><span style="font-size:10px;font-family:var(--mono)">3/10</span></div></td><td><span class="tag err">Com falha</span></td><td><button class="btn sm" onclick="openChkDetail('CLF-004')">Ver</button></td></tr>
+          <tr><td style="font-family:var(--mono);font-size:10px;color:var(--muted)">CLF-005</td><td class="bold">Limpeza e Conservação</td><td>Maria Fonseca</td><td>07:30</td><td><div style="display:flex;align-items:center;gap:8px"><div class="prog-bar" style="width:70px"><div class="prog-fill" style="width:100%;background:var(--green)"></div></div><span style="font-size:10px;font-family:var(--mono)">8/8</span></div></td><td><span class="tag ok">Concluído</span></td><td><button class="btn sm" onclick="openChkDetail('CLF-005')">Ver</button></td></tr>
+          <tr><td style="font-family:var(--mono);font-size:10px;color:var(--muted)">CLF-006</td><td class="bold">Manutenção Preventiva</td><td>Fábio Torres</td><td>10:00</td><td><div style="display:flex;align-items:center;gap:8px"><div class="prog-bar" style="width:70px"><div class="prog-fill" style="width:0%;background:var(--muted)"></div></div><span style="font-size:10px;font-family:var(--mono)">0/15</span></div></td><td><span class="tag pend">Não iniciado</span></td><td><button class="btn sm" onclick="openChkDetail('CLF-006')">Ver</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PAGE: RASTREAMENTO ===== -->
+<div class="page" id="page-rastreamento">
+  <div class="page-header">
+    <div><div class="page-title"><span style="margin-right:8px">📡</span>Ituran — Rastreamento</div><div class="page-sub">31 veículos · 24 em rota · Atualizado agora</div></div>
+    <div class="actions">
+      <a class="btn" href="https://www.ituran.com.br" target="_blank">Portal Ituran ↗</a>
+      <button class="btn primary" onclick="openModal('modalVeh')">+ Cadastrar Veículo</button>
+    </div>
+  </div>
+
+  <!-- Mapa simulado -->
+  <div class="card mb">
+    <div class="card-header"><div class="card-title">🗺 Mapa de Frota em Tempo Real</div><span style="font-size:11px;color:var(--green)">● Live</span></div>
+    <div class="card-body" style="padding:0">
+      <div class="map-area">
+        <div class="map-grid"></div>
+        <!-- Pins -->
+        <div class="map-pin" style="left:30%;top:45%"><div class="map-pin-dot" style="background:var(--green)"></div><div class="map-tooltip">ABC-1234 · 62 km/h<br>Av. Paulista, SP</div></div>
+        <div class="map-pin" style="left:55%;top:35%"><div class="map-pin-dot" style="background:var(--amber)"></div><div class="map-tooltip">DEF-5678 · Parado<br>R. Augusta, SP</div></div>
+        <div class="map-pin" style="left:70%;top:55%"><div class="map-pin-dot" style="background:var(--green)"></div><div class="map-tooltip">GHI-9012 · 48 km/h<br>Via Anchieta</div></div>
+        <div class="map-pin" style="left:42%;top:65%"><div class="map-pin-dot" style="background:var(--green)"></div><div class="map-tooltip">MNO-7890 · 35 km/h<br>Av. Brasil, SP</div></div>
+        <div class="map-pin" style="left:20%;top:70%"><div class="map-pin-dot" style="background:var(--muted)" style="animation:none"></div><div class="map-tooltip">JKL-3456 · Offline<br>Último: Guarulhos</div></div>
+        <!-- Controls -->
+        <div class="map-controls">
+          <div class="map-btn">+</div>
+          <div class="map-btn">−</div>
+          <div class="map-btn">⟳</div>
+        </div>
+        <!-- Legend -->
+        <div class="map-legend">
+          <div class="map-leg-item"><div class="sdot on"></div>Em rota</div>
+          <div class="map-leg-item"><div class="sdot warn"></div>Parado</div>
+          <div class="map-leg-item"><div class="sdot off"></div>Offline</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="filter-bar mb">
+    <div class="search-box"><span>🔍</span><input type="text" placeholder="Buscar placa ou motorista..." oninput="filterTable('tblVeh',this.value)"></div>
+    <select class="filter-select"><option>Todos os status</option><option>Em rota</option><option>Parado</option><option>Offline</option></select>
+    <button class="btn sm" onclick="showToast('Exportado para Excel','success')">⬇ Exportar</button>
+  </div>
+
+  <div class="card">
+    <div class="card-body" style="padding:0">
+      <table class="tbl" id="tblVeh">
+        <thead><tr><th>Placa</th><th>Modelo</th><th>Motorista</th><th>Local</th><th>Velocidade</th><th>Ignição</th><th>Status</th><th>Ação</th></tr></thead>
+        <tbody>
+          <tr><td class="bold">ABC-1234</td><td>Fiat Fiorino</td><td>João Mendes</td><td>Av. Paulista, SP</td><td style="font-family:var(--mono)">62 km/h</td><td><span class="tag ok">Ligada</span></td><td><span class="tag ok">Em rota</span></td><td><button class="btn sm">Rastrear</button></td></tr>
+          <tr><td class="bold">DEF-5678</td><td>VW Gol</td><td>Carlos Ramos</td><td>R. Augusta, SP</td><td style="font-family:var(--mono)">0 km/h</td><td><span class="tag ok">Ligada</span></td><td><span class="tag pend">Parado</span></td><td><button class="btn sm">Rastrear</button></td></tr>
+          <tr><td class="bold">GHI-9012</td><td>Ford Transit</td><td>Fábio Torres</td><td>Via Anchieta</td><td style="font-family:var(--mono)">48 km/h</td><td><span class="tag ok">Ligada</span></td><td><span class="tag ok">Em rota</span></td><td><button class="btn sm">Rastrear</button></td></tr>
+          <tr><td class="bold">JKL-3456</td><td>Chevrolet S10</td><td>Não atribuído</td><td>Guarulhos, SP</td><td style="font-family:var(--mono)">—</td><td><span class="tag err">Desligada</span></td><td><span class="tag err">Offline</span></td><td><button class="btn sm">Rastrear</button></td></tr>
+          <tr><td class="bold">MNO-7890</td><td>Renault Master</td><td>Ana Lima</td><td>Av. Brasil, SP</td><td style="font-family:var(--mono)">35 km/h</td><td><span class="tag ok">Ligada</span></td><td><span class="tag ok">Em rota</span></td><td><button class="btn sm">Rastrear</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PAGE: SINISTROS ===== -->
+<div class="page" id="page-sinistros">
+  <div class="page-header">
+    <div><div class="page-title"><span style="margin-right:8px">🛡</span>Porto Seguro — Sinistros</div><div class="page-sub">3 ativos · 1 aprovado · 2 em análise</div></div>
+    <div class="actions">
+      <a class="btn" href="https://www.portoseguro.com.br" target="_blank">Portal Porto ↗</a>
+      <button class="btn primary" onclick="openModal('modalSin')">+ Novo Sinistro</button>
+    </div>
+  </div>
+
+  <div class="g3 mb">
+    <div class="kpi red"><div class="kpi-label">Sinistros Ativos</div><div class="kpi-value">03</div><div class="kpi-footer"><div class="kpi-delta down">1 urgente</div></div></div>
+    <div class="kpi amber"><div class="kpi-label">Em Análise</div><div class="kpi-value">02</div><div class="kpi-footer"><div class="kpi-delta neu">Porto Seguro</div></div></div>
+    <div class="kpi green"><div class="kpi-label">Aprovados (mês)</div><div class="kpi-value">04</div><div class="kpi-footer"><div class="kpi-delta up">↑ 2 vs anterior</div></div></div>
+  </div>
+
+  <div class="filter-bar mb">
+    <div class="search-box"><span>🔍</span><input type="text" placeholder="Buscar sinistro, placa ou responsável..." oninput="filterTable('tblSin',this.value)"></div>
+    <select class="filter-select"><option>Todos</option><option>Urgente</option><option>Em análise</option><option>Aprovado</option><option>Encerrado</option></select>
+  </div>
+
+  <div class="card">
+    <div class="card-body" style="padding:0">
+      <table class="tbl" id="tblSin">
+        <thead><tr><th>Protocolo</th><th>Tipo</th><th>Veículo</th><th>Local</th><th>Data</th><th>Responsável</th><th>Status</th><th>Ação</th></tr></thead>
+        <tbody>
+          <tr><td style="font-family:var(--mono);font-size:11px">#SIN-2025-0892</td><td>Colisão traseira</td><td class="bold">ABC-1234</td><td>Av. Paulista, SP</td><td>12/05/2025</td><td>João M.</td><td><span class="tag err">Urgente</span></td><td><button class="btn sm" onclick="showToast('Abrindo protocolo no portal Porto Seguro...','info')">Abrir</button></td></tr>
+          <tr><td style="font-family:var(--mono);font-size:11px">#SIN-2025-0880</td><td>Furto de equipamento</td><td class="bold">DEF-5678</td><td>Guarulhos, SP</td><td>05/05/2025</td><td>Ana L.</td><td><span class="tag pend">Em análise</span></td><td><button class="btn sm" onclick="showToast('Abrindo protocolo no portal Porto Seguro...','info')">Abrir</button></td></tr>
+          <tr><td style="font-family:var(--mono);font-size:11px">#SIN-2025-0871</td><td>Dano de vidro</td><td class="bold">GHI-9012</td><td>Santo André, SP</td><td>28/04/2025</td><td>Pedro S.</td><td><span class="tag ok">Aprovado</span></td><td><button class="btn sm" onclick="showToast('Abrindo protocolo no portal Porto Seguro...','info')">Abrir</button></td></tr>
+          <tr><td style="font-family:var(--mono);font-size:11px">#SIN-2025-0860</td><td>Arranhão lateral</td><td class="bold">MNO-7890</td><td>Campinas, SP</td><td>18/04/2025</td><td>Fábio T.</td><td><span class="tag ok">Encerrado</span></td><td><button class="btn sm" onclick="showToast('Abrindo protocolo no portal Porto Seguro...','info')">Abrir</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PAGE: COLABORADORES ===== -->
+<div class="page" id="page-colaboradores">
+  <div class="page-header">
+    <div><div class="page-title"><span style="margin-right:8px">👥</span>HCM Teknisa — Colaboradores</div><div class="page-sub">162 cadastrados · 148 ativos hoje</div></div>
+    <div class="actions">
+      <a class="btn" href="https://www.teknisa.com" target="_blank">Abrir HCM ↗</a>
+      <button class="btn primary" onclick="openModal('modalColab')">+ Novo Colaborador</button>
+    </div>
+  </div>
+
+  <div class="g3 mb" style="grid-template-columns:repeat(6,1fr)">
+    <div class="hcm-stat"><div class="hcm-val" style="color:var(--green)">148</div><div class="hcm-lbl">Ativos</div></div>
+    <div class="hcm-stat"><div class="hcm-val" style="color:var(--red)">06</div><div class="hcm-lbl">Ausentes</div></div>
+    <div class="hcm-stat"><div class="hcm-val" style="color:var(--accent)">08</div><div class="hcm-lbl">Férias</div></div>
+    <div class="hcm-stat"><div class="hcm-val" style="color:var(--amber)">02</div><div class="hcm-lbl">Afastados</div></div>
+    <div class="hcm-stat"><div class="hcm-val" style="color:var(--purple)">12</div><div class="hcm-lbl">Hora Extra</div></div>
+    <div class="hcm-stat"><div class="hcm-val" style="color:var(--muted2)">162</div><div class="hcm-lbl">Total</div></div>
+  </div>
+
+  <div class="filter-bar mb">
+    <div class="search-box"><span>🔍</span><input type="text" placeholder="Buscar colaborador, cargo ou setor..." oninput="filterTable('tblColab',this.value)"></div>
+    <select class="filter-select"><option>Todos os status</option><option>Ativo</option><option>Ausente</option><option>Férias</option><option>Afastado</option></select>
+    <select class="filter-select"><option>Todos os setores</option><option>Operacional</option><option>Logística</option><option>Administrativo</option><option>Segurança</option></select>
+    <button class="btn sm" onclick="showToast('Exportado para Excel','success')">⬇ Exportar</button>
+  </div>
+
+  <div class="card">
+    <div class="card-body" style="padding:0">
+      <table class="tbl" id="tblColab">
+        <thead><tr><th>Nome</th><th>Matrícula</th><th>Cargo</th><th>Setor</th><th>Entrada</th><th>H. Extras</th><th>Status</th><th>Ação</th></tr></thead>
+        <tbody>
+          <tr><td class="bold">João Mendes</td><td style="font-family:var(--mono);font-size:10px">00412</td><td>Operador</td><td>Operacional</td><td style="font-family:var(--mono)">07:02</td><td style="font-family:var(--mono)">01:20</td><td><span class="tag ok">Ativo</span></td><td><button class="btn sm">Perfil</button></td></tr>
+          <tr><td class="bold">Ana Lima</td><td style="font-family:var(--mono);font-size:10px">00318</td><td>Supervisora</td><td>Operacional</td><td style="font-family:var(--mono)">06:58</td><td style="font-family:var(--mono)">00:00</td><td><span class="tag ok">Ativo</span></td><td><button class="btn sm">Perfil</button></td></tr>
+          <tr><td class="bold">Pedro Santos</td><td style="font-family:var(--mono);font-size:10px">00290</td><td>Motorista</td><td>Logística</td><td style="font-family:var(--mono)">—</td><td style="font-family:var(--mono)">—</td><td><span class="tag info">Férias</span></td><td><button class="btn sm">Perfil</button></td></tr>
+          <tr><td class="bold">Carlos Ramos</td><td style="font-family:var(--mono);font-size:10px">00445</td><td>Porteiro</td><td>Segurança</td><td style="font-family:var(--mono)">—</td><td style="font-family:var(--mono)">—</td><td><span class="tag err">Ausente</span></td><td><button class="btn sm">Perfil</button></td></tr>
+          <tr><td class="bold">Fábio Torres</td><td style="font-family:var(--mono);font-size:10px">00381</td><td>Técnico Manutenção</td><td>Operacional</td><td style="font-family:var(--mono)">07:15</td><td style="font-family:var(--mono)">02:45</td><td><span class="tag ok">Ativo</span></td><td><button class="btn sm">Perfil</button></td></tr>
+          <tr><td class="bold">Maria Fonseca</td><td style="font-family:var(--mono);font-size:10px">00502</td><td>Auxiliar Limpeza</td><td>Operacional</td><td style="font-family:var(--mono)">05:45</td><td style="font-family:var(--mono)">00:30</td><td><span class="tag ok">Ativo</span></td><td><button class="btn sm">Perfil</button></td></tr>
+          <tr><td class="bold">Rita Costa</td><td style="font-family:var(--mono);font-size:10px">00367</td><td>Analista Adm.</td><td>Administrativo</td><td style="font-family:var(--mono)">08:01</td><td style="font-family:var(--mono)">00:00</td><td><span class="tag ok">Ativo</span></td><td><button class="btn sm">Perfil</button></td></tr>
+          <tr><td class="bold">Marcos Oliveira</td><td style="font-family:var(--mono);font-size:10px">00411</td><td>Coordenador</td><td>Operacional</td><td style="font-family:var(--mono)">07:30</td><td style="font-family:var(--mono)">01:00</td><td><span class="tag pend">Afastado</span></td><td><button class="btn sm">Perfil</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PAGE: ALERTAS ===== -->
+<div class="page" id="page-alertas">
+  <div class="page-header">
+    <div><div class="page-title"><span style="margin-right:8px">🔔</span>Central de Alertas</div><div class="page-sub">5 críticos · 3 avisos · 2 informativos</div></div>
+    <div class="actions">
+      <button class="btn" onclick="markAllRead()">Marcar todos como lidos</button>
+    </div>
+  </div>
+  <div class="section-title">Críticos</div>
+  <div class="card mb">
+    <div class="alert-item"><div class="alert-icon ai-crit">🚨</div><div class="alert-body"><div class="alert-title">Sinistro urgente em aberto sem resposta</div><div class="alert-desc">#SIN-2025-0892 — colisão traseira — sem atualização há 3 dias</div><div class="alert-meta"><span>📅 12/05/2025</span><span>Veículo: ABC-1234</span></div></div><span class="alert-src as-psg">Porto Seguro</span></div>
+    <div class="alert-item"><div class="alert-icon ai-crit">📋</div><div class="alert-body"><div class="alert-title">Check List com itens reprovados</div><div class="alert-desc">Controle de Acesso — 3 não conformidades identificadas</div><div class="alert-meta"><span>📅 Hoje 07:44</span><span>Responsável: Rita Costa</span></div></div><span class="alert-src as-clf">CLF</span></div>
+  </div>
+  <div class="section-title">Avisos</div>
+  <div class="card mb">
+    <div class="alert-item"><div class="alert-icon ai-warn">📡</div><div class="alert-body"><div class="alert-title">Veículo parado fora de área autorizada</div><div class="alert-desc">DEF-5678 — parado há 22 min em R. Augusta</div><div class="alert-meta"><span>📅 Hoje 08:31</span></div></div><span class="alert-src as-itr">Ituran</span></div>
+    <div class="alert-item"><div class="alert-icon ai-warn">🔋</div><div class="alert-body"><div class="alert-title">Rastreador sem sinal de bateria</div><div class="alert-desc">JKL-3456 — último sinal registrado às 06:12</div><div class="alert-meta"><span>📅 Hoje 06:12</span></div></div><span class="alert-src as-itr">Ituran</span></div>
+    <div class="alert-item"><div class="alert-icon ai-warn">⏰</div><div class="alert-body"><div class="alert-title">Check List atrasado</div><div class="alert-desc">Segurança do Trabalho — prazo 08:30 — 45% concluído</div><div class="alert-meta"><span>📅 Hoje 09:15</span><span>Responsável: Pedro Santos</span></div></div><span class="alert-src as-clf">CLF</span></div>
+  </div>
+  <div class="section-title">Informativos</div>
+  <div class="card">
+    <div class="alert-item"><div class="alert-icon ai-ok">✅</div><div class="alert-body"><div class="alert-title">Sinistro #0871 aprovado pela Porto Seguro</div><div class="alert-desc">Reembolso de R$ 450,00 aprovado — Transit GHI-9012</div><div class="alert-meta"><span>📅 28/04/2025</span></div></div><span class="alert-src as-psg">Porto Seguro</span></div>
+    <div class="alert-item"><div class="alert-icon ai-info">👥</div><div class="alert-body"><div class="alert-title">Ausência não justificada registrada</div><div class="alert-desc">Carlos Ramos (Porteiro) — turno manhã sem registro de ponto</div><div class="alert-meta"><span>📅 Hoje 07:00</span></div></div><span class="alert-src as-hcm">HCM</span></div>
+  </div>
+</div>
+
+<!-- ===== PAGE: OCORRÊNCIAS ===== -->
+<div class="page" id="page-ocorrencias">
+  <div class="page-header">
+    <div><div class="page-title"><span style="margin-right:8px">📌</span>Ocorrências</div><div class="page-sub">7 abertas · 23 fechadas no mês</div></div>
+    <div class="actions">
+      <button class="btn sm" onclick="showToast('Exportado para Excel','success')">⬇ Exportar</button>
+      <button class="btn primary" onclick="openModal('modalOcc')">+ Nova Ocorrência</button>
+    </div>
+  </div>
+  <div class="filter-bar mb">
+    <div class="search-box"><span>🔍</span><input type="text" placeholder="Buscar ocorrência..." oninput="filterTable('tblOcc',this.value)"></div>
+    <select class="filter-select"><option>Todos os tipos</option><option>Sinistro</option><option>Falha Operacional</option><option>Acidente</option><option>Segurança</option></select>
+    <select class="filter-select"><option>Toda prioridade</option><option>Urgente</option><option>Alta</option><option>Média</option><option>Baixa</option></select>
+  </div>
+  <div class="card">
+    <div class="card-body" style="padding:0">
+      <table class="tbl" id="tblOcc">
+        <thead><tr><th>#</th><th>Tipo</th><th>Descrição</th><th>Origem</th><th>Responsável</th><th>Aberto em</th><th>Prioridade</th><th>Status</th><th>Ação</th></tr></thead>
+        <tbody id="occBody">
+          <tr><td style="font-family:var(--mono);font-size:10px;color:var(--muted)">OCC-089</td><td>Sinistro</td><td class="bold">Colisão traseira ABC-1234</td><td><span class="alert-src as-psg" style="font-size:10px">Porto</span></td><td>João M.</td><td style="font-size:11px">12/05 08:15</td><td><span class="tag err">Urgente</span></td><td><span class="tag pend">Aberta</span></td><td><button class="btn sm" onclick="showToast('Ocorrência aberta','info')">Ver</button></td></tr>
+          <tr><td style="font-family:var(--mono);font-size:10px;color:var(--muted)">OCC-088</td><td>Rastreamento</td><td class="bold">Veículo fora de rota</td><td><span class="alert-src as-itr" style="font-size:10px">Ituran</span></td><td>Auto</td><td style="font-size:11px">12/05 08:31</td><td><span class="tag pend">Alta</span></td><td><span class="tag pend">Aberta</span></td><td><button class="btn sm" onclick="showToast('Ocorrência aberta','info')">Ver</button></td></tr>
+          <tr><td style="font-family:var(--mono);font-size:10px;color:var(--muted)">OCC-087</td><td>Check List</td><td class="bold">Não conformidade — Acesso</td><td><span class="alert-src as-clf" style="font-size:10px">CLF</span></td><td>Rita C.</td><td style="font-size:11px">12/05 07:44</td><td><span class="tag err">Alta</span></td><td><span class="tag pend">Aberta</span></td><td><button class="btn sm" onclick="showToast('Ocorrência aberta','info')">Ver</button></td></tr>
+          <tr><td style="font-family:var(--mono);font-size:10px;color:var(--muted)">OCC-086</td><td>RH</td><td class="bold">Ausência não justificada</td><td><span class="alert-src as-hcm" style="font-size:10px">HCM</span></td><td>Ana L.</td><td style="font-size:11px">12/05 07:00</td><td><span class="tag info">Média</span></td><td><span class="tag ok">Resolvida</span></td><td><button class="btn sm" onclick="showToast('Ocorrência aberta','info')">Ver</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PAGE: RELATÓRIOS ===== -->
+<div class="page" id="page-relatorios">
+  <div class="page-header">
+    <div><div class="page-title"><span style="margin-right:8px">📊</span>Relatórios e Análises</div><div class="page-sub">Maio 2025 — dados consolidados</div></div>
+    <div class="actions">
+      <select class="filter-select"><option>Maio 2025</option><option>Abril 2025</option><option>Março 2025</option></select>
+      <button class="btn primary" onclick="showToast('Relatório exportado em PDF','success')">⬇ Exportar PDF</button>
+    </div>
+  </div>
+
+  <div class="kpi-grid mb2" style="grid-template-columns:repeat(4,1fr)">
+    <div class="kpi blue"><div class="kpi-label">Check Lists no Mês</div><div class="kpi-value">312</div><div class="kpi-footer"><div class="kpi-delta up">↑ 18% vs abril</div></div></div>
+    <div class="kpi green"><div class="kpi-label">Taxa de Conformidade</div><div class="kpi-value">87%</div><div class="kpi-footer"><div class="kpi-delta up">↑ 3pp vs abril</div></div></div>
+    <div class="kpi amber"><div class="kpi-label">Km Percorridos</div><div class="kpi-value">42.8k</div><div class="kpi-footer"><div class="kpi-delta neu">31 veículos</div></div></div>
+    <div class="kpi red"><div class="kpi-label">Custo de Sinistros</div><div class="kpi-value">R$28k</div><div class="kpi-footer"><div class="kpi-delta down">↑ R$8k vs anterior</div></div></div>
+  </div>
+
+  <div class="g2 mb">
+    <div class="card">
+      <div class="card-header"><div class="card-title">Check Lists por Semana</div></div>
+      <div class="card-body"><div class="chart-wrap"><canvas id="chartCLF"></canvas></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">Status da Frota</div></div>
+      <div class="card-body"><div class="chart-wrap"><canvas id="chartFleet"></canvas></div></div>
+    </div>
+  </div>
+
+  <div class="g2 mb">
+    <div class="card">
+      <div class="card-header"><div class="card-title">Ocorrências por Integração</div></div>
+      <div class="card-body"><div class="chart-wrap"><canvas id="chartOcc"></canvas></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">Presença de Colaboradores</div></div>
+      <div class="card-body"><div class="chart-wrap"><canvas id="chartColab"></canvas></div></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /pages wrapper -->
+</div><!-- /layout -->
+
+<!-- ========== MODALS ========== -->
+
+<!-- Modal: Nova Ocorrência -->
+<div class="overlay" id="modalOcc">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">📌 Nova Ocorrência</div>
+      <button class="modal-close" onclick="closeModal('modalOcc')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row"><div class="fg"><label>Tipo de Ocorrência</label><select><option>Sinistro Veicular</option><option>Falha Operacional</option><option>Acidente de Trabalho</option><option>Não Conformidade</option><option>Ausência</option></select></div><div class="fg"><label>Prioridade</label><select><option>Urgente</option><option>Alta</option><option>Média</option><option>Baixa</option></select></div></div>
+      <div class="form-row"><div class="fg"><label>Veículo / Local</label><input type="text" placeholder="Ex: ABC-1234 ou Portaria Norte"></div><div class="fg"><label>Responsável</label><input type="text" placeholder="Nome do responsável"></div></div>
+      <div class="form-row full"><div class="fg"><label>Descrição</label><textarea placeholder="Descreva a ocorrência em detalhes..."></textarea></div></div>
+      <div class="form-row"><div class="fg"><label>Sistema de origem</label><select><option>Manual</option><option>Check List Fácil</option><option>Ituran</option><option>Porto Seguro</option><option>HCM Teknisa</option></select></div><div class="fg"><label>Data / Hora</label><input type="datetime-local" id="occDate"></div></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('modalOcc')">Cancelar</button>
+      <button class="btn primary" onclick="saveOcc()">Registrar Ocorrência</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Novo Check List -->
+<div class="overlay" id="modalChk">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">✅ Novo Check List</div>
+      <button class="modal-close" onclick="closeModal('modalChk')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row"><div class="fg"><label>Modelo de Check List</label><select><option>Inspeção de Frota</option><option>Controle de EPI</option><option>Segurança do Trabalho</option><option>Controle de Acesso</option><option>Limpeza e Conservação</option><option>Manutenção Preventiva</option></select></div><div class="fg"><label>Responsável</label><input type="text" placeholder="Nome do colaborador"></div></div>
+      <div class="form-row"><div class="fg"><label>Local / Ativo</label><input type="text" placeholder="Área, veículo ou equipamento"></div><div class="fg"><label>Prazo</label><input type="datetime-local" id="chkDate"></div></div>
+      <div class="form-row full"><div class="fg"><label>Observações</label><textarea placeholder="Informações adicionais..."></textarea></div></div>
+      <div class="form-row"><div class="fg"><label>Notificar por</label><select><option>Push + E-mail</option><option>Apenas Push</option><option>Apenas E-mail</option><option>Sem notificação</option></select></div><div class="fg"><label>Recorrência</label><select><option>Único</option><option>Diário</option><option>Semanal</option><option>Mensal</option></select></div></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('modalChk')">Cancelar</button>
+      <button class="btn primary" onclick="saveChk()">Criar no Check List Fácil</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Novo Sinistro -->
+<div class="overlay" id="modalSin">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">🛡 Registrar Sinistro</div>
+      <button class="modal-close" onclick="closeModal('modalSin')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row"><div class="fg"><label>Tipo de Sinistro</label><select><option>Colisão</option><option>Furto/Roubo</option><option>Dano de Vidro</option><option>Incêndio</option><option>Responsabilidade Civil</option></select></div><div class="fg"><label>Veículo</label><select><option>ABC-1234 — Fiorino</option><option>DEF-5678 — Gol</option><option>GHI-9012 — Transit</option><option>JKL-3456 — S10</option><option>MNO-7890 — Master</option></select></div></div>
+      <div class="form-row"><div class="fg"><label>Local do Sinistro</label><input type="text" placeholder="Endereço completo"></div><div class="fg"><label>Data / Hora</label><input type="datetime-local"></div></div>
+      <div class="form-row full"><div class="fg"><label>Descrição Detalhada</label><textarea placeholder="Descreva as circunstâncias do sinistro..."></textarea></div></div>
+      <div class="form-row"><div class="fg"><label>Responsável / Motorista</label><input type="text" placeholder="Nome"></div><div class="fg"><label>Estimativa de Dano</label><input type="text" placeholder="R$ 0,00"></div></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('modalSin')">Cancelar</button>
+      <button class="btn primary" onclick="saveSin()">Enviar para Porto Seguro</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Novo Colaborador -->
+<div class="overlay" id="modalColab">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">👤 Novo Colaborador</div>
+      <button class="modal-close" onclick="closeModal('modalColab')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row"><div class="fg"><label>Nome Completo</label><input type="text" placeholder="Nome completo"></div><div class="fg"><label>CPF</label><input type="text" placeholder="000.000.000-00"></div></div>
+      <div class="form-row"><div class="fg"><label>Cargo</label><input type="text" placeholder="Cargo/função"></div><div class="fg"><label>Setor</label><select><option>Operacional</option><option>Logística</option><option>Administrativo</option><option>Segurança</option><option>Manutenção</option></select></div></div>
+      <div class="form-row"><div class="fg"><label>Data de Admissão</label><input type="date"></div><div class="fg"><label>Turno</label><select><option>Manhã (06–14)</option><option>Tarde (14–22)</option><option>Noite (22–06)</option><option>Administrativo</option></select></div></div>
+      <div class="form-row"><div class="fg"><label>E-mail</label><input type="email" placeholder="email@empresa.com.br"></div><div class="fg"><label>Telefone</label><input type="text" placeholder="(11) 90000-0000"></div></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('modalColab')">Cancelar</button>
+      <button class="btn primary" onclick="saveColab()">Cadastrar no HCM</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Veículo -->
+<div class="overlay" id="modalVeh">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">🚗 Cadastrar Veículo</div>
+      <button class="modal-close" onclick="closeModal('modalVeh')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row"><div class="fg"><label>Placa</label><input type="text" placeholder="ABC-1234"></div><div class="fg"><label>Modelo</label><input type="text" placeholder="Ex: Fiat Fiorino"></div></div>
+      <div class="form-row"><div class="fg"><label>Ano</label><input type="text" placeholder="2022"></div><div class="fg"><label>Cor</label><input type="text" placeholder="Branco"></div></div>
+      <div class="form-row"><div class="fg"><label>Nº Rastreador Ituran</label><input type="text" placeholder="ITR-000000"></div><div class="fg"><label>Seguro Porto Seguro</label><input type="text" placeholder="Apólice"></div></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('modalVeh')">Cancelar</button>
+      <button class="btn primary" onclick="showToast('Veículo cadastrado com sucesso!','success');closeModal('modalVeh')">Cadastrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOASTS -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- FAB -->
+<div class="fab-wrap">
+  <button class="fab sec" onclick="openModal('modalChk')">✅ Check List</button>
+  <button class="fab main" onclick="openModal('modalOcc')">＋ Ocorrência</button>
+</div>
+
+<script>
+// ===== CLOCK =====
+function updateClock(){
+  const n=new Date();
+  var ck=document.getElementById('clock');
+  if(ck) ck.textContent=n.toLocaleTimeString('pt-BR');
+  var dl=document.getElementById('dateLabel');
+  if(dl) dl.textContent=n.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})+' — '+n.toLocaleTimeString('pt-BR');
+}
+updateClock();setInterval(updateClock,1000);
+
+// ===== NAVIGATION =====
+function navTo(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const pg=document.getElementById('page-'+page);
+  if(pg) pg.classList.add('active');
+  const ni=document.querySelector('[data-page="'+page+'"]');
+  if(ni) ni.classList.add('active');
+  if(page==='relatorios') setTimeout(initCharts,100);
+  window.scrollTo(0,0);
+}
+
+// ===== MODAL =====
+function openModal(id){var m=document.getElementById(id);if(m)m.classList.add('open');}
+function closeModal(id){var m=document.getElementById(id);if(m)m.classList.remove('open');}
+document.querySelectorAll('.overlay').forEach(o=>{
+  o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open')})
+});
+
+// ===== TOAST =====
+function showToast(msg,type='info'){
+  const w=document.getElementById('toastWrap');
+  const t=document.createElement('div');
+  t.className='toast '+type;
+  const icons={success:'✓ ',error:'✕ ',info:'ℹ '};
+  t.textContent=(icons[type]||'')+msg;
+  w.appendChild(t);
+  setTimeout(()=>t.remove(),3500);
+}
+
+// ===== SAVES =====
+function saveOcc(){
+  closeModal('modalOcc');
+  const id='OCC-0'+Math.floor(Math.random()*99+90);
+  addFeedItem('Nova ocorrência registrada: '+id,'as-sys','Sistema','#ef4444');
+  showToast('Ocorrência registrada: '+id,'success');
+}
+function saveChk(){
+  closeModal('modalChk');
+  showToast('Check List criado no Check List Fácil!','success');
+}
+function saveSin(){
+  closeModal('modalSin');
+  showToast('Sinistro enviado para a Porto Seguro!','success');
+}
+function saveColab(){
+  closeModal('modalColab');
+  showToast('Colaborador cadastrado no HCM Teknisa!','success');
+}
+var var_red='#ef4444';
+
+// ===== FEED =====
+function addFeedItem(title,srcClass,srcLabel,dotColor){
+  const feed=document.getElementById('feedDash');if(!feed)return;
+  const now=new Date();
+  const time=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  const div=document.createElement('div');
+  div.className='act-item';
+  div.innerHTML=`<div class="act-time">${time}</div><div class="act-dot" style="background:${dotColor||'var(--accent)'}"></div><div class="act-content"><div class="act-title">${title}</div><div class="act-src"><span class="${srcClass}">${srcLabel}</span></div></div>`;
+  feed.insertBefore(div,feed.firstChild);
+}
+
+// ===== TABLE FILTER =====
+function filterTable(tableId,val){
+  const rows=document.querySelectorAll('#'+tableId+' tbody tr');
+  rows.forEach(row=>{
+    row.style.display=row.textContent.toLowerCase().includes(val.toLowerCase())?'':'none';
+  });
+}
+
+// ===== CHECKLIST DETAIL =====
+function openChkDetail(id){showToast('Abrindo '+id+' no Check List Fácil...','info')}
+
+// ===== MARK ALL READ =====
+function markAllRead(){
+  var nc=document.getElementById('notifCount'); if(nc) nc.textContent='0';
+  var sa=document.getElementById('sideAlerts'); if(sa) sa.textContent='0';
+  showToast('Todos os alertas marcados como lidos','success');
+}
+
+// ===== CHARTS =====
+let chartsInit=false;
+function initCharts(){
+  // Só executa quando a página de relatórios está visível
+  var _guard = document.getElementById('chartCLF');
+  if(!_guard){ return; }
+
+  var C=Chart.defaults;
+  C.color='#6b7280';
+  C.font.family="'DM Sans',sans-serif";
+  C.font.size=11;
+
+  var wk=['S1','S2','S3','S4'];
+
+  function safe(id){ return document.getElementById(id); }
+
+  // CLF Line
+  var elCLF = safe('chartCLF');
+  if(elCLF) new Chart(elCLF,{type:'line',data:{labels:wk,datasets:[
+    {label:'Concluídos',data:[58,72,81,76],borderColor:'#10b981',backgroundColor:'rgba(16,185,129,0.1)',tension:.4,fill:true,pointRadius:4,pointBackgroundColor:'#10b981'},
+    {label:'Com falha', data:[8,5,12,9],  borderColor:'#ef4444',backgroundColor:'rgba(239,68,68,0.1)',tension:.4,fill:true,pointRadius:4,pointBackgroundColor:'#ef4444'}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9ca3af',boxWidth:12}}},scales:{x:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#6b7280'}},y:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#6b7280'}}}}});
+
+  // Fleet Doughnut
+  var elFleet = safe('chartFleet');
+  if(elFleet) new Chart(elFleet,{type:'doughnut',data:{labels:['Em rota','Parado','Offline','Manutenção'],datasets:[{data:[24,4,2,1],backgroundColor:['#10b981','#f59e0b','#6b7280','#ef4444'],borderWidth:0,hoverOffset:4}]},options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{position:'right',labels:{color:'#9ca3af',boxWidth:12,padding:14}}}}});
+
+  // Ocorrências Bar
+  var elOcc = safe('chartOcc');
+  if(elOcc) new Chart(elOcc,{type:'bar',data:{labels:['CLF','Ituran','Porto Seguro','HCM','Manual'],datasets:[{label:'Ocorrências',data:[12,8,5,4,3],backgroundColor:['rgba(14,165,233,0.7)','rgba(249,115,22,0.7)','rgba(139,92,246,0.7)','rgba(16,185,129,0.7)','rgba(255,255,255,0.2)'],borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:'#6b7280'}},y:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#6b7280'}}}}});
+
+  // Colaboradores Stacked
+  var elColab = safe('chartColab');
+  if(elColab) new Chart(elColab,{type:'bar',data:{labels:['Seg','Ter','Qua','Qui','Sex','Sáb'],datasets:[
+    {label:'Presentes',data:[148,151,145,149,148,82],backgroundColor:'rgba(16,185,129,0.7)',borderRadius:4,stack:'s'},
+    {label:'Ausentes', data:[14,11,17,13,14,8],     backgroundColor:'rgba(239,68,68,0.5)', borderRadius:4,stack:'s'}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9ca3af',boxWidth:12}}},scales:{x:{grid:{display:false},ticks:{color:'#6b7280'},stacked:true},y:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#6b7280'},stacked:true}}}});
+}
+
+
+
+// ===== LOGIN =====
+function doLogin() {
+  var u = document.getElementById('lu');
+  var p = document.getElementById('lp');
+  var err = document.getElementById('lerr');
+  if (!u || !p) return;
+  if (u.value.trim() === 'elvis.reis' && p.value === 'appa2025') {
+    var scr = document.getElementById('loginScreen');
+    if (scr) { scr.classList.add('hide'); setTimeout(function(){ scr.style.display='none'; }, 420); }
+    initApp();
+  } else {
+    if (err) { err.textContent = 'Usuário ou senha incorretos.'; setTimeout(function(){ err.textContent=''; }, 3000); }
+  }
+}
+document.addEventListener('DOMContentLoaded', function(){
+  var lp = document.getElementById('lp');
+  var lu = document.getElementById('lu');
+  if (lp) lp.addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
+  if (lu) lu.addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
+});
+
+// ===== APP INIT =====
+function initApp() {
+  updateClock();
+  setInterval(updateClock, 1000);
+  setDTDefaults();
+  setTimeout(function(){ initSparklines(); initTabCharts('clf'); }, 300);
+  startAutoFeed();
+}
+
+// ===== SPARKLINES =====
+function initSparklines() {
+  var spks = [
+    {id:'spk0',data:[18,20,22,19,24],c:'#3b82f6'},
+    {id:'spk1',data:[28,30,29,31,31],c:'#10b981'},
+    {id:'spk2',data:[5,8,6,9,7],   c:'#f59e0b'},
+    {id:'spk3',data:[144,146,150,148,148],c:'#8b5cf6'},
+    {id:'spk4',data:[2,1,3,2,3],   c:'#ef4444'},
+  ];
+  spks.forEach(function(s){ mkSparkline(s.id, s.data, s.c); });
+}
+
+// ===== MAP FUNCTIONS (alias para os pins do SVG) =====
+function mapSelect(id) {
+  if (typeof itrSelectVeh === 'function') itrSelectVeh(id);
+}
+function mapZoom(f) {
+  if (typeof itrZoom === 'function') itrZoom(f);
+}
+function mapReset() {
+  if (typeof itrReset === 'function') itrReset();
+}
+function mapFilter(type) {
+  if (typeof itrFilter === 'function') itrFilter(type);
+}
+function mapToggleFollow() {
+  if (typeof itrToggleFollow === 'function') itrToggleFollow();
+}
+function mapCloseDetail() {
+  if (typeof itrCloseDetail === 'function') itrCloseDetail();
+  var sheet = document.getElementById('mapDetailSheet');
+  if (sheet) sheet.classList.remove('show');
+}
+
+// ===== switchTab alias =====
+function switchTab(tab) {
+  if (typeof switchApiTab === 'function') switchApiTab(tab);
+}
+
+// ===== DATETIME DEFAULTS =====
+function setDTDefaults() {
+  document.querySelectorAll('input[type=datetime-local], input[type=date]').forEach(function(el){
+    var n = new Date(); n.setMinutes(n.getMinutes() - n.getTimezoneOffset());
+    el.value = el.type === 'date' ? n.toISOString().slice(0,10) : n.toISOString().slice(0,16);
+  });
+}
+
+// ===== AUTO FEED =====
+function startAutoFeed() {
+  var evs = [
+    {d:22000, msg:'ABC-1234 chegou ao destino', cls:'as-itr', src:'Ituran', c:'#10b981'},
+    {d:40000, msg:'CLF-002 concluído com 100%', cls:'as-clf', src:'CLF',    c:'#3b82f6'},
+    {d:65000, msg:'Fábio Torres — hora extra 02:45', cls:'as-hcm', src:'HCM', c:'#8b5cf6'},
+  ];
+  evs.forEach(function(ev){
+    setTimeout(function(){
+      addFeedItem(ev.msg, ev.cls, ev.src, ev.c);
+      addNotif(ev.msg, ev.cls, ev.c);
+      showToast(ev.msg, 'info');
+    }, ev.d);
+  });
+}
+
+
+// ===== NOTIF DRAWER =====
+var _drawerOpen = false;
+function toggleDrawer() {
+  _drawerOpen = !_drawerOpen;
+  var d = document.getElementById('ndrawer');
+  if (d) d.classList.toggle('open', _drawerOpen);
+}
+document.addEventListener('click', function(e){
+  if (_drawerOpen && !e.target.closest('#ndrawer') && !e.target.closest('.icon-btn')) {
+    _drawerOpen = false;
+    var d = document.getElementById('ndrawer');
+    if (d) d.classList.remove('open');
+  }
+});
+function addNotif(msg, cls, color) {
+  var list = document.getElementById('ndlist');
+  if (!list) return;
+  var n = new Date();
+  var time = 'Hoje, ' + String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
+  var d = document.createElement('div');
+  d.className = 'nd-item unread';
+  d.innerHTML = '<div class="nd-icon" style="background:rgba(128,128,128,.1);color:' + color + '">🔔</div>'
+    + '<div><div class="nd-msg">' + msg + '</div><div class="nd-time">' + time + '</div></div>';
+  list.insertBefore(d, list.firstChild);
+  var cnt = list.querySelectorAll('.unread').length;
+  var ndot = document.getElementById('ndot');
+  var ndcount = document.getElementById('ndcount');
+  if (ndot) ndot.textContent = cnt;
+  if (ndcount) ndcount.textContent = '(' + cnt + ')';
+}
+function markAllRead() {
+  document.querySelectorAll('.nd-item.unread').forEach(function(i){ i.classList.remove('unread'); });
+  var ndot = document.getElementById('ndot');
+  var ndcount = document.getElementById('ndcount');
+  var sa = document.getElementById('sideAlerts');
+  if (ndot) ndot.textContent = '0';
+  if (ndcount) ndcount.textContent = '(0)';
+  if (sa) sa.textContent = '0';
+  showToast('Notificações marcadas como lidas', 'success');
+}
+
+// ===== TEMA CLARO/ESCURO =====
+var _charts = {};
+function toggleTheme() {
+  var html = document.documentElement;
+  var isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  var btn = document.getElementById('themeBtn');
+  if (btn) btn.textContent = isDark ? '☀️' : '🌙';
+  // Reiniciar charts
+  setTimeout(function(){
+    var tabChartsInited = {};
+    initSparklines();
+    initTabCharts('clf');
+  }, 120);
+}
+
+// ===== FEED HELPERS =====
+function addFeedItem(title, cls, src, color) {
+  var feed = document.getElementById('feedMain') || document.getElementById('feedDash');
+  if (!feed) return;
+  var n = new Date();
+  var time = String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
+  var d = document.createElement('div');
+  d.className = 'act-item';
+  d.innerHTML = '<div class="act-time">' + time + '</div>'
+    + '<div class="act-dot" style="background:' + color + '"></div>'
+    + '<div class="act-content"><div class="act-title">' + title + '</div>'
+    + '<div class="act-src"><span class="' + cls + '">' + src + '</span></div></div>';
+  feed.insertBefore(d, feed.firstChild);
+}
+function filterFeed(src) {
+  var items = document.querySelectorAll('#feedMain .act-item, #feedDash .act-item');
+  items.forEach(function(i){
+    i.style.display = (!src || i.textContent.includes(src)) ? 'flex' : 'none';
+  });
+}
+
+// ===== CHK DETAIL =====
+var CLF_ITEMS = {
+  'CLF-001':['Verificar nível de óleo','Checar pressão dos pneus','Verificar freios','Inspecionar lataria','Testar iluminação','Verificar extintor','Checar cintos','Verificar espelhos','Testar buzina','Conferir documentação'],
+  'CLF-002':['EPIs disponíveis','Capacetes inspecionados','Luvas em bom estado','Botas entregues','Coletes conferidos','Óculos de proteção','Protetores auriculares','Cintos de segurança','Respiradores','Kit emergência','Registro assinado','Devolução EPIs'],
+  'CLF-003':['Sinalização de área','Delimitação de risco','EPI obrigatório','Treinamento verificado','Extintores posicionados','PPRA atualizado','Registro de incidentes','Saídas de emergência','Kit primeiros socorros','Comunicação de risco','Inspeção elétrica'],
+  'CLF-004':['Catraca funcionando','Câmeras ativas','Registro visitantes','Controle de acesso','Identificação colaboradores','Veículos cadastrados','Portaria sinalizada','Perímetro vistoriado','Iluminação da área','Comunicação segurança'],
+  'CLF-005':['Corredores limpos','Banheiros higienizados','Áreas comuns OK','Refeitório limpo','Sala de reunião','Recepção organizada','Vidros limpos','Piso encerado','Coleta de lixo','Dedetização','Produtos de limpeza','Registro diário'],
+};
+var CLF_STATUS = {
+  'CLF-001':[1,1,1,1,1,1,1,1,1,1],
+  'CLF-002':[1,1,1,1,1,1,1,1,0,0,0,0],
+  'CLF-003':[1,1,1,1,1,0,0,0,0,0,0],
+  'CLF-004':[1,0,1,0,0,0,0,0,0,0],
+  'CLF-005':[1,1,1,1,1,1,1,1,0,0,0,0],
+};
+function openChkDetail(id, name, pct) {
+  var t = document.getElementById('chkDTitle');
+  var prog = document.getElementById('chkDProg');
+  var bar = document.getElementById('chkDBar');
+  var items_el = document.getElementById('chkDItems');
+  if (t) t.textContent = '📋 ' + name + ' — ' + id;
+  if (prog) prog.textContent = pct + '% concluído';
+  if (bar) {
+    var fill = bar.querySelector('.prog-fill');
+    if (fill) { fill.style.width = pct + '%'; fill.style.background = pct===100?'var(--green)':pct>60?'var(--accent)':pct>30?'var(--amber)':'var(--red)'; }
+  }
+  var items = CLF_ITEMS[id] || [];
+  var statuses = CLF_STATUS[id] || [];
+  if (items_el) {
+    items_el.innerHTML = '';
+    items.forEach(function(item, i){
+      var s = statuses[i] !== undefined ? statuses[i] : 1;
+      var d = document.createElement('div'); d.className = 'chk-row';
+      d.innerHTML = '<div class="chk-box ' + (s?'chk-ok':'chk-fail') + '">' + (s?'✓':'✕') + '</div>'
+        + '<span style="flex:1;font-size:12px;color:var(--muted2)">' + item + '</span>'
+        + '<span class="tag ' + (s?'ok':'err') + '">' + (s?'OK':'Falha') + '</span>';
+      items_el.appendChild(d);
+    });
+  }
+  openModal('modalChkDetail');
+}
+
+// ===== SAVES =====
+function saveOcc(){
+  closeModal('modalOcc');
+  var id = 'OCC-0' + Math.floor(Math.random()*99+90);
+  addFeedItem('Ocorrência ' + id + ' registrada', 'as-sys', 'Sistema', '#6b7280');
+  showToast('Ocorrência ' + id + ' registrada!', 'success');
+}
+function saveChk(){ closeModal('modalChk'); showToast('Check List criado no Check List Fácil!','success'); }
+function saveSin(){ closeModal('modalSin'); showToast('Sinistro enviado para Porto Seguro!','success'); }
+function saveColab(){ closeModal('modalColab'); showToast('Colaborador cadastrado no HCM Teknisa!','success'); }
+
+// Table filter
+function filterTable(id, val) {
+  var rows = document.querySelectorAll('#' + id + ' tbody tr');
+  rows.forEach(function(r){ r.style.display = r.textContent.toLowerCase().includes(val.toLowerCase()) ? '' : 'none'; });
+}
+
+// Overlay close on backdrop click
+document.addEventListener('DOMContentLoaded', function(){
+  document.querySelectorAll('.overlay').forEach(function(o){
+    o.addEventListener('click', function(e){ if(e.target===o) o.classList.remove('open'); });
+  });
+});
+
+</script>
+</body>
+</html>
